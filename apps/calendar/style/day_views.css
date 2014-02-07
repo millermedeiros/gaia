@@ -14,9 +14,9 @@
 
 .day-events > .hour {
   height: 5rem;
-  padding-left: 1.2rem;
+  padding-left: 1.5rem;
   position: relative;
-  border-bottom: 0.1rem solid #E6E6E6;
+  border-bottom: 0.1rem solid #f8f8f8;
 }
 
 .day-events > .hour:last-child {
@@ -36,10 +36,11 @@
 .day-events > .hour h4 {
   position: absolute;
   width: 4em;
-  color: #9D9D9D;
+  color: #595959;
   font-size: 1.4rem;
   font-weight: 400;
-  line-height: 5rem;
+  line-height: 1;
+  padding-top: 0.5rem;
 }
 
 /** events */
@@ -47,10 +48,10 @@
 .day-events .events {
   -moz-user-select: none;
   position: relative;
-  width: calc(100% - 5.2rem);
+  width: calc(100% - 6rem);
   height: 5rem;
-  margin-left: 5.2rem;
-  border-left: 0.1rem solid #E6E6E6;
+  margin-left: 5.5rem;
+  border-left: 0.1rem solid #f8f8f8;
 }
 
 .day-events .event {
@@ -67,16 +68,16 @@
 
 .day-events .container {
   /* turn off calendar color bg */
-  background: rgba(255, 255, 255, 0.7) !important;
+  background: rgba(255, 255, 255, 0.8) !important;
   border-width: 0;
   border-style: solid;
-  border-left-width: 0.4rem;
+  border-left-width: 0.5rem;
   height: 100%;
-  padding: 0.8rem 1rem 1.5rem;
+  padding: 0.85rem 1rem 0.85rem;
 }
 
 .day-events .event.has-alarms .container {
-  background: rgba(255, 255, 255, 0.7) url(/style/icons/alarm.png) no-repeat top right / 3rem !important;
+  background: rgba(255, 255, 255, 0.8) url(/style/icons/alarm.png) no-repeat top right / 3rem !important;
 }
 
 .day-events .hour .display-hour {
@@ -90,12 +91,13 @@
 .day-events .event h5 {
   width: calc(100% - 1rem - 0.6rem);
   min-height: 1.5rem;
-  font-size: 1.3rem;
+  font-size: 1.4rem;
   line-height: 1;
   font-weight: 500;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+  color: #333;
 }
 
 .day-events .event .details {
@@ -103,12 +105,12 @@
   top: 2.8rem;
   width: calc(100% - 1rem - 0.6rem);
   min-height: 2.1rem;
-  padding-top: 0.2rem;
+  padding-top: 0.5rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: #5b5b5b;
-  font-size: 1.2rem;
+  color: #707070;
+  font-size: 1.3rem;
 }
 
 .day-events .event.partial-hour .details {
@@ -153,8 +155,8 @@
 }
 
 #day-view h4 {
-  font-size: 1.3rem;
-  width: 6em;
+  font-size: 1.5rem;
+  width: 3em;
 }
 
 #day-view > section.active {
@@ -170,8 +172,8 @@
 
 #day-view .day-events.allday {
   height: 5rem;
-  border-bottom: 1px solid #C5C5C5;
+  border-bottom: 1px solid #e2e2e2;
   position: relative;
   z-index: 11;
-  background-color: #F4f4f4;
+  background-color: #f8f8f8;
 }
