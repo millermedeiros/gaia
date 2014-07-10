@@ -1,267 +1,104 @@
-Calendar.ns('Models').Event = (function() {
+define(function(require, exports) {
   'use strict';
 
-  /**
-   * Creates a wrapper around a event instance from the db
-   */
-  function Event(data) {
-    var isNew = false;
+  var Signal = require('signals');
 
-    if (typeof(data) === 'undefined') {
-      isNew = true;
-      data = Object.create(null);
-      data.remote = {};
-    }
+  var times = require('mout/function/times');
+  var strftime = require('mout/date/strftime');
+  var randInt = require('mout/random/randInt');
+  var choice = require('mout/random/choice');
+  var guid = require('mout/random/guid');
 
-    this.data = data;
-    /** shortcut */
-    var remote = this.remote = this.data.remote;
+  var _eventsCache = {};
 
-    if ('start' in remote && !('startDate' in remote)) {
-      remote.startDate = Calendar.Calc.dateFromTransport(
-        remote.start
-      );
-    }
+  var names = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean non metus urna. Etiam vitae turpis vel sem pulvinar accumsan in in leo. Praesent libero mauris, ultricies sit amet felis feugiat, dignissim condimentum felis. Mauris varius lectus et accumsan tristique. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Ut in lorem sed augue feugiat tempor nec eu libero. Vivamus tempor lacinia aliquam. Sed eget porttitor leo. Interdum et malesuada fames ac ante ipsum primis in faucibus.'.split(' ');
 
-    if ('end' in remote && !('endDate' in remote)) {
-      remote.endDate = Calendar.Calc.dateFromTransport(
-        remote.end
-      );
-    }
 
-    if (isNew) {
-      this.resetToDefaults();
-    }
-
-    var start = this.remote.startDate;
-    var end = this.remote.endDate;
-
-    // the typeof check is to see if we have already
-    // set the value in resetToDefaults (or prior)
-    if (
-        typeof(this._isAllDay) === 'undefined' &&
-        Calendar.Calc.isOnlyDate(start) &&
-        Calendar.Calc.isOnlyDate(end)
-    ) {
-      // mostly to handle the case before the time
-      // where we actually managed isAllDay as a setter.
-      this.isAllDay = true;
-    } else {
-      // not on prototype intentionally because
-      // we need to either need to resetToDefaults
-      // or check startDate/endDate in the constructor.
-      this.isAllDay = false;
-    }
+  function getDayId(date) {
+    return strftime(date, '%Y-%m-%d');
   }
 
-  Event.prototype = {
+  exports.onEventExpansion = new Signal();
 
-    /**
-     * Sets default values of an event.
-     */
-    resetToDefaults: function() {
-      var now = new Date();
+  exports.getDay = function(date) {
+    var day = {
+      date: date,
+      hours: getDayHours(),
+      alldayEvents: []
+    };
 
-      this.isAllDay = false;
-
-      this.startDate = new Date(
-        now.getFullYear(),
-        now.getMonth(),
-        now.getDate()
-      );
-
-      this.endDate = new Date(
-        now.getFullYear(),
-        now.getMonth(),
-        now.getDate() + 1
-      );
-    },
-
-    get _id() {
-      return this.data._id;
-    },
-
-    _setDate: function(date, field) {
-      if (!(date instanceof Date)) {
-        throw new TypeError('must pass instance of Date');
-      }
-
-      var allDay = this.isAllDay;
-
-      if (allDay) {
-        // clone the existing date
-        date = new Date(date.valueOf());
-
-        // filter out the stuff we don't care about
-        date.setHours(0);
-        date.setMinutes(0);
-        date.setSeconds(0);
-        date.setMilliseconds(0);
-      }
-
-      this.remote[field] = Calendar.Calc.dateToTransport(
-        date,
-        null, // TODO allow setting tzid
-        allDay
-      );
-
-      this.remote[field + 'Date'] = date;
-    },
-
-    /* start date */
-
-    get startDate() {
-      return this.remote.startDate;
-    },
-
-    set startDate(value) {
-      this._setDate(value, 'start');
-    },
-
-    /* end date */
-
-    get endDate() {
-      return this.remote.endDate;
-    },
-
-    set endDate(value) {
-      this._setDate(value, 'end');
-    },
-
-    set isAllDay(value) {
-      this._isAllDay = value;
-
-      // send values through the their setter.
-      if (this.endDate) {
-        this.endDate = this.endDate;
-      }
-
-      if (this.startDate) {
-        this.startDate = this.startDate;
-      }
-    },
-
-    get isAllDay() {
-      return this._isAllDay;
-    },
-
-    /* associated records */
-
-    get calendarId() {
-      return this.data.calendarId;
-    },
-
-    set calendarId(value) {
-      if (value && typeof(value) !== 'number') {
-        value = Calendar.probablyParseInt(value);
-      }
-
-      this.data.calendarId = value;
-    },
-
-    /* simple setters */
-
-    get syncToken() {
-      return this.remote.syncToken;
-    },
-
-    set syncToken(value) {
-      this.remote.syncToken = value;
-    },
-
-    get title() {
-      return this.remote.title || '';
-    },
-
-    set title(value) {
-      this.remote.title = value;
-    },
-
-    get description() {
-      return this.remote.description || '';
-    },
-
-    set description(value) {
-      this.remote.description = value;
-    },
-
-    get location() {
-      return this.remote.location || '';
-    },
-
-    set location(value) {
-      this.remote.location = value;
-      return this.remote.location;
-    },
-
-    get alarms() {
-      return this.remote.alarms || [];
-    },
-
-    set alarms(value) {
-      this.remote.alarms = value;
-      return this.remote.alarms;
-    },
-
-    /**
-     * If data doesn't have any errors, the event
-     * takes on the attributes of data.
-     *
-     * @param {Object} data, object that contains
-     *  at least some attributes of the event object.
-     *
-     * @return {Object} errors if validationErrors returns erros,
-     *  true otherwise.
-     */
-    updateAttributes: function(data) {
-      var errors = this.validationErrors(data);
-      if (errors) {
-        return errors;
-      }
-      for (var field in data) {
-        this[field] = data[field];
-      }
-      return true;
-    },
-
-    /**
-     * Validates the contents of the model.
-     *
-     * Output example:
-     *
-     *   [
-     *     {
-     *       name: 'invalidDate',
-     *       properties: ['startDate', 'endDate']
-     *     }
-     *     //...
-     *   ]
-     *
-     * @param {Object} data, optional object that contains
-     *  at least some attributes of the event object.
-     * @return {Array|False} see above.
-     */
-    validationErrors: function(data) {
-      var obj = data || this;
-      var end = obj.endDate.valueOf();
-      var start = obj.startDate.valueOf();
-      var errors = [];
-
-      if (start >= end) {
-        errors.push({
-          name: 'start-after-end'
-        });
-      }
-
-      if (errors.length) {
-        return errors;
-      }
-
-      return false;
+    var id = getDayId(date);
+    if (_eventsCache[id]) {
+      // we add a delay just so it's async (avoid blocking thread)
+      setTimeout(function() {
+        addEventsToDay(day, _eventsCache[id]);
+      }, 10);
+    } else {
+      // simulate async event expansion
+      setTimeout(function() {
+        var events = getEvents(date);
+        addEventsToDay(day, events);
+      }, randInt(100, 1000));
     }
 
+    return day;
   };
 
-  return Event;
 
-}());
+  function addEventsToDay(day, events) {
+    events.forEach(function(event) {
+      if (event.isAllDay) {
+        day.alldayEvents.push(event);
+      } else {
+        var hour = (new Date(event.startDate)).getHours();
+        day.hours[hour].events.push(event);
+      }
+    });
+    exports.onEventExpansion.dispatch();
+  }
+
+
+  function getDayHours() {
+    var hours = [];
+    times(24, function(i) {
+      hours.push({
+        hour: i,
+        events: []
+      });
+    });
+    return hours;
+  }
+
+
+  function getEvents(date) {
+    var id = getDayId(date);
+    if (_eventsCache[id]) {
+      return _eventsCache[id];
+    }
+
+    var events = _eventsCache[id] = [];
+    times(randInt(0, 5), function() {
+      var startDate = new Date(date);
+      date.setHours(randInt(0, 23));
+      var endDate = new Date(startDate);
+      var duration = randInt(1, 4);
+      endDate.setHours(endDate.getHours() + duration);
+
+      var event = {
+        isAllDay: randInt(0, 5) > 4,
+        startDate: startDate,
+        endDate: endDate,
+        duration: duration,
+        id: guid()
+      };
+
+      event.title = choice(names);
+      event.title += randInt(0, 1) ? ' ' + choice(names) : '';
+
+      events.push(event);
+    });
+
+    return events;
+  }
+
+});

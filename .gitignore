@@ -5,6 +5,7 @@
 .svn
 *~
 manifest.appcache
+.module-cache/
 
 /apps/calendar/js/presets.js
 /apps/camera/js/config.js

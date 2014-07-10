@@ -1,331 +1,273 @@
-Calendar.ns('Views').Week = (function() {
-  'use strict';
+/** @jsx React.DOM */
+define(function(require) {
+  var React = require('react');
 
-  var Parent = Calendar.Views.Day;
-  var template = Calendar.Templates.Week;
+  // ---
 
-  /**
-   * Create a 'frame' of a parent view.
-   * This was designed for week view but majority
-   * of logic could apply elsewhere if needed.
-   *
-   * @param {String} id frame id.
-   * @param {Array[Object]} children array of child views.
-   */
-  function Frame(id, children, stickyList) {
-    this.id = id;
-    this.children = children;
-    this.stickyList = stickyList;
-    // frame element - mostly here for positioning
-    this.element = document.createElement('section');
+  var WeekAllDay = require('./week_allday');
+  var WeekSidebarHours = require('./week_sidebar');
+  var WeekDays = require('./week_days');
 
-    this.element.innerHTML = template.frame.render();
+  // ----
 
-    var firstSpan = children[0].timespan;
-    var lastSpan = children[children.length - 1].timespan;
+  var remove = require('mout/array/remove');
+  var clamp = require('mout/math/clamp');
+  var isSame = require('mout/date/isSame');
+  var round = require('mout/math/round');
+  var strftime = require('mout/date/strftime');
+  var times = require('mout/function/times');
 
-    // join the duration of timespans
-    this.timespan = new Calendar.Timespan(
-      firstSpan.start,
-      lastSpan.end
-    );
+  var eventModel = require('models/event');
+  var GestureDetector = require('gesture_detector');
 
-    // append all children (in order to the frame's element)
-    var len = children.length;
-    var i = 0;
+  // ----
 
-    var weekChildren = this.element.querySelector('.scroll .children');
-    for (; i < len; i++) {
-      // create always should return an element.
-      weekChildren.appendChild(children[i].create());
-    }
+  var CELL_WIDTH = 58;
+  var MIN_X = CELL_WIDTH * -10;
+  var START_X = CELL_WIDTH * -5;
 
-    this.element.querySelector('.sticky').appendChild(stickyList);
-    this._appendSidebarHours();
 
-    this._currentTime = new Calendar.Views.CurrentTime({
-      container: this.element.querySelector('.scroll-content'),
-      sticky: this.element.querySelector('.sticky'),
-      timespan: this.timespan
-    });
-  }
+  var WeekView = React.createClass({displayName: 'WeekView',
 
-  Frame.prototype = {
+    getDefaultProps: function() {
+      var today = new Date();
+      today.setHours(0, 0, 0, 0);
 
-    /**
-     * Calls a method on all children.
-     */
-    _childMethod: function(method) {
-      if (!this.children) {
-        console.trace();
-        console.error('trying to access dead object');
-      }
-
-      var i = 0;
-      var len = this.children.length;
-
-      for (; i < len; i++) {
-        this.children[i][method]();
-      }
-
-      if (method in this._currentTime) {
-        this._currentTime[method]();
-      }
+      return {
+        baseDate: today,
+        range: this.getRange(today),
+      };
     },
 
-    /**
-     * Activates all children and adds ACTIVE class to frame.
-     */
-    activate: function() {
-      // we need to add the active class before caling activate in the child
-      // elements because they might need to get access to element style
-      this.element.classList.add(
-        Calendar.View.ACTIVE
-      );
-      this._childMethod('activate');
+
+    getInitialState: function() {
+      return {
+        days: []//,
+        // visibleRange: this.getVisibleRange(this.props.range)
+      };
     },
 
-    /**
-     * Deactivates all children and removes ACTIVE class from frame.
-     */
-    deactivate: function() {
-      this._childMethod('deactivate');
-      this.element.classList.remove(
-        Calendar.View.ACTIVE
-      );
+
+    componentDidMount: function() {
+      this.updateDays();
+      this.setupPan();
+      eventModel.onEventExpansion.add(this.forceUpdate, this);
     },
 
-    /**
-     * Destroys all children, frame element and references.
-     */
-    destroy: function() {
-      this._childMethod('destroy');
-
-      var el = this.element;
-
-      if (el.parentNode) {
-        el.parentNode.removeChild(el);
-      }
-
-      this.timespan = null;
-      this.children = null;
-      this.element = null;
-    },
-
-    getScrollTop: function() {
-      var scroll = this.element.querySelector('.scroll');
-      var scrollTop = scroll.scrollTop;
-      return scrollTop;
-    },
-
-    setScrollTop: function(scrollTop) {
-      var scroll = this.element.querySelector('.scroll');
-      scroll.scrollTop = scrollTop;
-    },
-
-    _appendSidebarHours: function() {
-      var element = this.element.querySelector('.sidebar');
-
-      var i = 0;
-      var hour;
-
-      for (; i < 24; i++) {
-        hour = String(i);
-
-        element.insertAdjacentHTML(
-          'beforeend',
-          template.sidebarHour.render({
-            hour: hour,
-            displayHour: this._formatDisplayHour(i)
-          })
-        );
-      }
-    },
-
-    _formatDisplayHour: function(hour) {
-      var date = new Date();
-      date.setHours(hour, 0, 0, 0);
-
-      var format = navigator.mozL10n.get('hour-format')
-        .replace(/\s*%p\s*/, '<span class="ampm">%p</span>');
-
-      var result = Calendar.App.dateFormat.localeFormat(date, format);
-
-      // remove leading zero
-      result = result.replace(/^0/, '');
-
-      return result;
-    }
-  };
-
-  function Week() {
-    Parent.apply(this, arguments);
-  }
-
-  Week.prototype = {
-    __proto__: Parent.prototype,
-
-    childClass: Calendar.Views.WeekChild,
-
-    // Needed for proper TimeHeader data
-    scale: 'week',
-
-    selectors: {
-      element: '#week-view'
-    },
-
-    get sidebar() {
-      return this._findElement('sidebar');
-    },
-
-    get frameContainer() {
-      return this._findElement('element');
-    },
-
-    get delegateParent() {
-      return this._findElement('element');
-    },
-
-    /**
-     * For a given date finds the week details.
-     *
-     * Example:
-     *
-     *    // week starts on Sunday in this example
-     *    var parent;
-     *
-     *    // attempt to find the required days.
-     *    parent.dateDetails(new Date(2012, 0, 1));
-     *    // { start: (2012, 0, 1), end: (2012, 0, 4)  length: 4 }
-     *
-     *    // any time that falls within the range returns same start
-     *    parent.dateDetails(new Date(2012, 0, 4));
-     *    // { start: (2012, 0, 1), end: (2012, 0, 4), length: 4 }
-     *
-     *    parent.dateDetails(new Date(2012, 0, 5));
-     *    // { start: (2012, 0, 5), end: (2012, 0, 7), length: 3 }
-     *
-     *
-     * @param {Date} date time to find week details for..
-     * @return {Object} see above.
-     */
-    weekDetails: function(date) {
-      var day = Calendar.Calc.dayOfWeek(date);
-
-      var start = Calendar.Calc.getWeekStartDate(date);
-      var end = new Date(start.valueOf());
-
-      end.setDate(
-        // -1 otherwise we end up with an extra day 1 + 7 === 8
-        (start.getDate() - 1) + Calendar.Calc.daysInWeek()
-      );
-
-      // day is zero based so 3 rather then 4
-      if (day > 3) {
-        start.setDate(start.getDate() + 4);
-        // display end of week.
-        return {
-          length: 3,
-          start: start,
-          end: end
-        };
-      } else {
-        end.setDate(end.getDate() - 3);
-        // display start of week.
-        return {
-          length: 4,
-          start: start,
-          end: end
-        };
-      }
-    },
-
-    /**
-     * See TimeParent for more details.
-     * The week view is special as it normalizes
-     * all dates to a week start/end point as defined
-     * in the weekDetails method.
-     *
-     * @param {Date} date change display to center on this date.
-     */
-    changeDate: function(date) {
-      // XXX: good hook to update header here too maybe?
-      var details = this.weekDetails(date);
-      Parent.prototype.changeDate.call(this, details.start);
-    },
 
     render: function() {
-      this.changeDate(
-        this.app.timeController.day
+      return (
+        React.DOM.main(null, 
+        React.DOM.header( {id:"time-header"}, 
+          React.DOM.h1(null, this.weekHeader()),
+          React.DOM.button( {type:"button", onClick:this.showToday}, "today")
+        ),
+        React.DOM.div( {id:"week"}, 
+          React.DOM.div( {className:"week-sidebar-allday icon-allday"}, "All day"),
+
+          React.DOM.div( {className:"week-alldays-wrapper"}, 
+            WeekAllDay( {days:this.state.days, ref:"weekAllDays"} )
+          ),
+
+          React.DOM.div( {className:"week-main"}, 
+            React.DOM.div( {className:"week-days-wrapper"}, 
+              WeekSidebarHours(null ),
+              WeekDays( {days:this.state.days, ref:"weekDays"} )
+            )
+          )
+        )
+      )
       );
     },
 
 
-    _nextTime: function(date) {
-      var details = this.weekDetails(date);
-      var result = details.start;
-      result.setDate(result.getDate() + details.length);
-      return result;
+    getScrollDiff: function() {
+      return Math.round((START_X - this.props.scrollOffsetX) / CELL_WIDTH);
     },
 
-    _previousTime: function(date) {
-      var details = this.weekDetails(date);
-      var result = details.start;
-      var offset = details.length;
 
-      // flip the length and remove it to find
-      // previous week set.
-      offset = (offset === 4) ? 3 : 4;
-
-      result.setDate(result.getDate() - offset);
-      return result;
+    showToday: function() {
+      var today = new Date();
+      today.setHours(0, 0, 0, 0);
+      this.props.baseDate = today;
+      this.updateDays();
     },
 
-    /**
-     * Builds the frame for the given time.
-     */
-    _createFrame: function(time) {
-      var details = this.weekDetails(time);
-      var start = details.start;
-      var id = start.valueOf();
-      var len = details.length;
-      var children = [];
-      var stickyList = document.createElement('ul');
-      stickyList.classList.add('sticky-list');
 
-      var i = 0;
-      for (; i < len; i++) {
-        var date = new Date(start.valueOf());
-        date.setDate(date.getDate() + i);
-
-        var stickyFrame = document.createElement('li');
-        stickyFrame.classList.add('sticky-frame');
-        stickyList.appendChild(stickyFrame);
-
-        children.push(new Calendar.Views.WeekChild({
-          date: date,
-          app: this.app,
-          stickyFrame: stickyFrame
-        }));
+    weekHeader: function() {
+      function monthYear(date) {
+        return strftime(date, '%b %Y');
       }
 
-      var frame = new Frame(id, children, stickyList);
-      var list = frame.element.classList;
+      var visibleRange = this.getVisibleRange(this.props.range);
+      // var visibleRange = this.state.visibleRange;
+      var str = monthYear(visibleRange.startDate);
+      if (!isSameMonth(visibleRange.startDate, visibleRange.endDate)) {
+        str += ' ' + monthYear(visibleRange.endDate);
+      }
+      return str;
+    },
 
-      list.add('days-' + len);
-      list.add('weekday');
 
-      frame.stickyList.classList.add('days-' + len);
+    getVisibleRange: function(range) {
+      var diff = this.getScrollDiff();
+      var startDate = new Date(range.startDate);
+      startDate.setDate(startDate.getDate() + 5 + diff);
+      var endDate = new Date(range.startDate);
+      endDate.setDate(endDate.getDate() + 9 + diff);
+      var visibleRange = {
+        startDate: startDate,
+        endDate: endDate
+      };
 
-      return frame;
+      return visibleRange;
+    },
+
+
+    // updateVisibleRange: function() {
+      // var range = this.getVisibleRange(this.props.range);
+      // this.setState({
+        // visibleRange: range
+      // });
+      // return range;
+    // },
+
+    setupPan: function () {
+      var element = this.getDOMNode();
+      var gd = new GestureDetector(element);
+
+      gd.startDetecting();
+
+      var self = this;
+
+      element.addEventListener('pan', function(evt) {
+        var detail = evt.detail;
+        var absX = Math.abs(detail.absolute.dx);
+        var absY = Math.abs(detail.absolute.dy);
+
+        if (absY > 30 || absX < absY) return;
+
+        evt.preventDefault();
+        evt.stopPropagation();
+
+        self.setScrollOffsetX(self.props.scrollOffsetX + detail.relative.dx);
+      });
+
+      element.addEventListener('swipe', function() {
+        self.setScrollOffsetX(round(self.props.scrollOffsetX, CELL_WIDTH));
+        self.updateBaseDateAfterScroll();
+      });
+    },
+
+
+    setScrollOffsetX: function(value) {
+      this.props.scrollOffsetX = clamp(value, MIN_X, 0);
+      var transform = 'translateX(' + this.props.scrollOffsetX +'px)';
+      this.refs.weekAllDays.getDOMNode().style.transform = transform;
+      this.refs.weekDays.getDOMNode().style.transform = transform;
+      // this.updateVisibleRange();
+    },
+
+
+    updateBaseDateAfterScroll: function () {
+      // not a computed property since we only want to add/remove elements from
+      // the DOM after user stops dragging
+      var baseDate = new Date(this.props.baseDate);
+      baseDate.setDate(baseDate.getDate() + this.getScrollDiff());
+      this.props.baseDate = baseDate;
+      this.updateDays();
+    },
+
+
+    updateDays: function () {
+      var range = this.updateRange();
+      var rangeBase = range.startDate;
+      var offset = 0;
+      var days = this.state.days.slice();
+
+      if (days.length) {
+        // keep only days inside the range
+        var day,
+          n = days.length;
+        while ((day = days[--n])) {
+          if (!insideRange(range, day.date)) {
+            remove(days, day);
+          }
+        }
+
+        if (days.length) {
+          if (isSameDay(rangeBase, days[0].date)) {
+            rangeBase = range.endDate;
+            offset = days.length - 14;
+          }
+        }
+      }
+
+      var diff = 15 - days.length;
+
+      if (!diff) return;
+
+      times(diff, function(i) {
+        var date = new Date(rangeBase);
+        date.setDate(date.getDate() + offset + i);
+        date.setHours(0, 0, 0, 0);
+        var day = eventModel.getDay(date);
+        if (rangeBase === range.endDate) {
+          days.push(day);
+        } else {
+          days.splice(i, 0, day);
+        }
+      });
+
+      this.setState({
+        days: days
+      });
+
+      // we need to sync the position to match the new amount of columns
+      this.setScrollOffsetX(START_X);
+    },
+
+    getRange: function(baseDate) {
+      var endDate = new Date(baseDate);
+      endDate.setDate(baseDate.getDate() + 9);
+      endDate.setHours(0, 0, 0, 0);
+      var startDate = new Date(baseDate);
+      startDate.setDate(baseDate.getDate() - 5);
+      startDate.setHours(0, 0, 0, 0);
+
+      var range = {
+        startDate: startDate,
+        endDate: endDate
+      };
+
+      return range;
+    },
+
+    updateRange: function () {
+      var range = this.getRange(this.props.baseDate);
+      this.props.range = range;
+      return range;
     }
 
-  };
+  });
 
-  Week.Frame = Frame;
 
-  Week.prototype.onfirstseen = Week.prototype.render;
+  function isSameDay(d1, d2) {
+    return Math.abs(d1 - d2) < 86400000;
+  }
 
-  return Week;
 
-}());
+  function isSameMonth(d1, d2) {
+    return isSame(new Date(d1), new Date(d2), 'month');
+  }
+
+
+  function insideRange(range, date) {
+    return range.startDate <= date && range.endDate >= date;
+  }
+
+
+  return WeekView;
+
+});
+
