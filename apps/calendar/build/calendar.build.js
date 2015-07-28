@@ -2,7 +2,7 @@
   appDir: '..',
   baseUrl: 'js',
   dir: '../../../build_stage/calendar',
-  fileExclusionRegExp: /^\.|^build$|^test$/,
+  fileExclusionRegExp: /^\.|^build$|^test$|^backend$/,
   mainConfigFile: '../js/main.js',
   optimize: 'none',
   logLevel: 2,

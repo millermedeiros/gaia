@@ -38,10 +38,12 @@ function method(endpoint, handler) {
 }
 
 function stream(endpoint, handler) {
-  service.stream(endpoint, function *() {
+  service.stream(endpoint, () => {
     var args = Array.slice(arguments);
-    yield start();
-    handler.apply(null, args);
+    return co(function *() {
+      yield start();
+      handler.apply(null, args);
+    });
   });
 }
 

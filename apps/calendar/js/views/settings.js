@@ -1,6 +1,7 @@
 define(function(require, exports, module) {
 'use strict';
 
+var CalendarModel = require('models/calendar');
 var CalendarTemplate = require('templates/calendar');
 var View = require('view');
 var co = require('ext/co');
@@ -162,7 +163,8 @@ Settings.prototype = {
   },
 
   _updateCalendars: function(records) {
-    this.calendarList = records.map(r => r.calendar);
+    // template expects a CalendarModel :/
+    this.calendarList = records.map(r => new CalendarModel(r.calendar));
     this.render();
   },
 

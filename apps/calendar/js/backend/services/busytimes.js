@@ -3,7 +3,8 @@ define(function(require, exports) {
 
 var co = require('ext/co');
 var core = require('core');
-var dayObserver = require('day_observer');
+// FIXME: migrate most of the dayObserver logic into the backend folder
+// var dayObserver = require('day_observer');
 
 /**
  * Fetch all the data needed to display the busytime information on the event

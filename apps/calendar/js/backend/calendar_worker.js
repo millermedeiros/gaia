@@ -1,11 +1,9 @@
 'use strict';
-importScripts('../ext/alameda.js');
 
 require.config({
-  baseUrl: '/js/backend',
   paths: {
-    common: '/js/common',
-    ext: '/js/ext'
+    common: '../common',
+    ext: '../ext'
   }
 });
 

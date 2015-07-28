@@ -2,11 +2,34 @@ define(function(require, exports) {
 'use strict';
 
 var EventEmitter2 = require('ext/eventemitter2');
+var client;
 var co = require('ext/co');
 var core = require('core');
 var dayObserver = require('day_observer');
 var nextTick = require('common/next_tick');
-var object = require('common/object');
+var thread;
+var threads = require('ext/threads');
+
+function stream(...args) {
+  return exec('stream', args);
+}
+
+function method(...args) {
+  return exec('method', args);
+}
+
+function exec(type, args) {
+  if (!client) {
+    thread = threads.create({
+      src: '/js/backend/calendar_worker.js',
+      type: 'worker'
+    });
+
+    client = threads.client('calendar', { thread: thread });
+  }
+
+  return client[type].apply(client, args);
+}
 
 /**
  * Fetch all the data needed to display the busytime information on the event
@@ -35,41 +58,11 @@ exports.fetchRecord = function(busytimeId) {
  * @returns {ClientStream}
  */
 exports.observeCalendars = function() {
-  // TODO: replace with real threads.client.stream when we get db into worker
-  var stream = new FakeClientStream();
-  var calendarStore = core.storeFactory.get('Calendar');
-
-  var getAllAndWrite = co.wrap(function *() {
-    // calendarStore.all() returns an object! we convert into an array since
-    // that is easier to render/manipulate
-    var calendars = yield calendarStore.all();
-    var data = yield object.map(calendars, co.wrap(function *(id, calendar) {
-      var provider = yield calendarStore.providerFor(calendar);
-      var caps = provider.calendarCapabilities(calendar);
-      return { calendar: calendar, capabilities: caps };
-    }));
-    stream.write(data);
-  });
-
-  calendarStore.on('add', getAllAndWrite);
-  calendarStore.on('remove', getAllAndWrite);
-  calendarStore.on('update', getAllAndWrite);
-
-  stream.cancel = function() {
-    calendarStore.off('add', getAllAndWrite);
-    calendarStore.off('remove', getAllAndWrite);
-    calendarStore.off('update', getAllAndWrite);
-    stream._cancel();
-  };
-
-  nextTick(getAllAndWrite);
-
-  return stream;
+  return stream('calendars/observe');
 };
 
 exports.updateCalendar = function(calendar) {
-  var calendarStore = core.storeFactory.get('Calendar');
-  return calendarStore.persist(calendar);
+  return method('calendars/update', calendar);
 };
 
 exports.createEvent = function(event) {
@@ -105,43 +98,23 @@ var persistEvent = co.wrap(function *(event, action, capability) {
 });
 
 exports.getSetting = function(id) {
-  var settingStore = core.storeFactory.get('Setting');
-  return settingStore.getValue(id);
+  return method('settings/get', id);
 };
 
 exports.setSetting = function(id, value) {
-  var settingStore = core.storeFactory.get('Setting');
-  return settingStore.set(id, value);
+  return method('settings/set', id, value);
 };
 
 exports.observeSetting = function(id) {
-  var stream = new FakeClientStream();
-  var settingStore = core.storeFactory.get('Setting');
-
-  var writeOnChange = function(value) {
-    stream.write(value);
-  };
-
-  settingStore.on(`${id}Change`, writeOnChange);
-
-  stream.cancel = function() {
-    settingStore.off(`${id}Change`, writeOnChange);
-    stream._cancel();
-  };
-
-  exports.getSetting(id).then(writeOnChange);
-
-  return stream;
+  return stream('settings/observe', id);
 };
 
 exports.getAccount = function(id) {
-  var accountStore = core.storeFactory.get('Account');
-  return accountStore.get(id);
+  return method('accounts/get', id);
 };
 
 exports.deleteAccount = function(id) {
-  var accountStore = core.storeFactory.get('Account');
-  return accountStore.remove(id);
+  return method('accounts/remove', id);
 };
 
 /**
@@ -149,69 +122,12 @@ exports.deleteAccount = function(id) {
  *
  * @param {Calendar.Models.Account} model account details.
  */
-exports.createAccount = co.wrap(function *(model) {
-  var storeFactory = core.storeFactory;
-  var accountStore = storeFactory.get('Account');
-  var calendarStore = storeFactory.get('Calendar');
-
-  // begin by persisting the account
-  var [, result] = yield accountStore.verifyAndPersist(model);
-
-  // finally sync the account so when
-  // we exit the request the user actually
-  // has some calendars. This should not take
-  // too long (compared to event sync).
-  yield accountStore.sync(result);
-
-  // begin sync of calendars
-  var calendars = yield calendarStore.remotesByAccount(result._id);
-
-  // note we don't wait for any of this to complete
-  // we just begin the sync and let the event handlers
-  // on the sync controller do the work.
-  for (var key in calendars) {
-    core.syncController.calendar(
-      result,
-      calendars[key]
-    );
-  }
-
-  return result;
-});
+exports.createAccount = function(model) {
+  return method('accounts/create', model);
+};
 
 exports.observeAccounts = function() {
-  var stream = new FakeClientStream();
-  var accountStore = core.storeFactory.get('Account');
-
-  var getAllAndWrite = co.wrap(function *() {
-    try {
-      var accounts = yield accountStore.all();
-      var data = object.map(accounts, (id, account) => {
-        return {
-          account: account,
-          provider: core.providerFactory.get(account.providerType)
-        };
-      });
-      stream.write(data);
-    } catch(err) {
-      console.error(`Error fetching accounts: ${err.message}`);
-    }
-  });
-
-  accountStore.on('add', getAllAndWrite);
-  accountStore.on('remove', getAllAndWrite);
-  accountStore.on('update', getAllAndWrite);
-
-  stream.cancel = function() {
-    accountStore.off('add', getAllAndWrite);
-    accountStore.off('remove', getAllAndWrite);
-    accountStore.off('update', getAllAndWrite);
-    stream._cancel();
-  };
-
-  nextTick(getAllAndWrite);
-
-  return stream;
+  return stream('accounts/observe');
 };
 
 exports.observeDay = function(date) {
