@@ -53,9 +53,14 @@ exports.observe = function(stream) {
     try {
       var accounts = yield accountStore.all();
       var data = object.map(accounts, (id, account) => {
+        var provider = core.providerFactory.get(account.providerType);
         return {
           account: account,
-          provider: core.providerFactory.get(account.providerType)
+          // serialize only the data that we need
+          provider: {
+            hasAccountSettings: provider.hasAccountSettings,
+            canSync: provider.canSync
+          }
         };
       });
       stream.write(data);

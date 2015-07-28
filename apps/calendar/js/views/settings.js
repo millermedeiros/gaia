@@ -7,6 +7,7 @@ var View = require('view');
 var co = require('ext/co');
 var core = require('core');
 var debug = require('common/debug')('views/settings');
+var mixIn = require('common/object').mixIn;
 var router = require('router');
 
 require('dom!settings');
@@ -173,7 +174,7 @@ Settings.prototype = {
       var calendar = this.calendarList.find(c => String(c._id) === String(id));
       // we "clone" the calendar otherwise the caching logic will affect the
       // 'calendarVisibilityChange' event (we check if value changed this way)
-      calendar = Object.create(calendar);
+      calendar = mixIn({}, calendar);
       calendar.localDisplayed = displayed;
       yield core.bridge.updateCalendar(calendar);
     } catch (err) {
