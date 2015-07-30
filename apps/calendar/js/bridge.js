@@ -66,36 +66,16 @@ exports.updateCalendar = function(calendar) {
 };
 
 exports.createEvent = function(event) {
-  return persistEvent(event, 'create', 'canCreate');
+  return method('events/create', event);
 };
 
 exports.updateEvent = function(event) {
-  return persistEvent(event, 'update', 'canUpdate');
+  return method('events/update', event);
 };
 
 exports.deleteEvent = function(event) {
-  return persistEvent(event, 'delete', 'canDelete');
+  return method('events/remove', event);
 };
-
-var persistEvent = co.wrap(function *(event, action, capability) {
-  event = event.data || event;
-  try {
-    var eventStore = core.storeFactory.get('Event');
-    var provider = yield eventStore.providerFor(event);
-    var caps = yield provider.eventCapabilities(event);
-    if (!caps[capability]) {
-      return Promise.reject(new Error(`Can't ${action} event`));
-    }
-    return provider[action + 'Event'](event);
-  } catch(err) {
-    console.error(
-      `${action} Error for event "${event._id}" ` +
-      `on calendar "${event.calendarId}"`
-    );
-    console.error(err);
-    return Promise.reject(err);
-  }
-});
 
 exports.getSetting = function(id) {
   return method('settings/get', id);
@@ -155,8 +135,7 @@ exports.observeDay = function(date) {
  * (can't create multiple local calendars)
  */
 exports.availablePresets = function(presetList) {
-  var accountStore = core.storeFactory.get('Account');
-  return accountStore.availablePresets(presetList);
+  return method('accounts/presets', presetList);
 };
 
 /**
