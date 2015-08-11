@@ -18,6 +18,7 @@ exports.forEach = function(obj, fn, thisArg) {
 
 exports.map = function(obj, fn, thisArg) {
   var results = [];
+  fn = fn || ((key, val) => val);
   Object.keys(obj).forEach((key) => {
     var value = obj[key];
     var result = fn.call(thisArg, key, value);

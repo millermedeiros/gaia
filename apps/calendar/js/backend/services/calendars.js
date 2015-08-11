@@ -6,6 +6,11 @@ var core = require('core');
 var nextTick = require('common/next_tick');
 var object = require('common/object');
 
+exports.sync = function(account, calendar) {
+  var calendarStore = core.storeFactory.get('Calendar');
+  return calendarStore.sync(account, calendar);
+};
+
 /**
  * Fetch all the calendars from database and emits a new event every time the
  * values changes.

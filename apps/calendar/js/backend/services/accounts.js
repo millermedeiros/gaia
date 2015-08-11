@@ -36,6 +36,19 @@ exports.persist = co.wrap(function *(model) {
   return result;
 });
 
+exports.sync = function(account) {
+  var accountStore = core.storeFactory.get('Account');
+  return accountStore.sync(account);
+};
+
+exports.all = function() {
+  var accountStore = core.storeFactory.get('Account');
+  return accountStore.all().then(list => {
+    // convert into array since it's easier to manipulate
+    return object.map(list);
+  });
+};
+
 exports.get = function(id) {
   var accountStore = core.storeFactory.get('Account');
   return accountStore.get(id);
@@ -44,6 +57,14 @@ exports.get = function(id) {
 exports.remove = function(id) {
   var accountStore = core.storeFactory.get('Account');
   return accountStore.remove(id);
+};
+
+exports.getCalendars = function(id) {
+  var calendarStore = core.storeFactory.get('Calendar');
+  return calendarStore.remotesByAccount(id).then(list => {
+    // convert into array since it's easier to manipulate
+    return object.map(list);
+  });
 };
 
 exports.observe = function(stream) {

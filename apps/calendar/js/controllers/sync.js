@@ -2,6 +2,7 @@ define(function(require, exports, module) {
 'use strict';
 
 var Responder = require('common/responder');
+var co = require('ext/co');
 var core = require('core');
 var isOffline = require('common/is_offline');
 
@@ -53,7 +54,7 @@ Sync.prototype = {
    *    controller.once('syncComplete', cb);
    *
    */
-  all: function(callback) {
+  all: co.wrap(function *(callback) {
     // this is for backwards compatibility... in reality we should remove
     // callbacks from .all.
     if (callback) {
@@ -66,21 +67,14 @@ Sync.prototype = {
       return;
     }
 
-    var account = core.storeFactory.get('Account');
+    var accounts = yield core.bridge.getAllAccounts();
+    accounts.forEach(this.account, this);
 
-    account.all(function(err, list) {
-
-      for (var key in list) {
-        this.account(list[key]);
-      }
-
-      // If we have nothing to sync
-      if (!this.pending) {
-        this.emit('syncComplete');
-      }
-
-    }.bind(this));
- },
+    // If we have nothing to sync
+    if (!this.pending) {
+      this.emit('syncComplete');
+    }
+ }),
 
   /**
    * Initiates a sync for a single calendar.
@@ -89,16 +83,17 @@ Sync.prototype = {
    * @param {Object} calendar specific calendar to sync.
    * @param {Function} [callback] optional callback.
    */
-  calendar: function(account, calendar, callback) {
-    var store = core.storeFactory.get('Calendar');
-    var self = this;
-
+  calendar: co.wrap(function *(account, calendar, callback) {
     this._incrementPending();
-    store.sync(account, calendar, err => {
-      self._resolvePending();
+    try {
+      yield core.bridge.syncCalendar(account, calendar);
+      this._resolvePending();
+      callback && callback();
+    } catch(err) {
+      this._resolvePending();
       this.handleError(err, callback);
-    });
-  },
+    }
+  }),
 
   /**
    * Initiates a sync of a single account and all
@@ -112,50 +107,26 @@ Sync.prototype = {
    * @param {Object} account sync target.
    * @param {Function} [callback] optional callback.
   */
-  account: function(account, callback) {
-    var storeFactory = core.storeFactory;
-    var accountStore = storeFactory.get('Account');
-    var calendarStore = storeFactory.get('Calendar');
-
-    var self = this;
-
+  account: co.wrap(function *(account, callback) {
     this._incrementPending();
-    accountStore.sync(account, err => {
-      if (err) {
-        self._resolvePending();
-        return this.handleError(err, callback);
-      }
 
-      var pending = 0;
-      function next() {
-        if (!(--pending)) {
-          self._resolvePending();
+    try {
+      // need to sync the account first in case the calendar list changed
+      yield core.bridge.syncAccount(account);
 
-          if (callback) {
-            callback();
-          }
-        }
-      }
+      var calendars = yield core.bridge.calendarsByAccountId(account._id);
+      // wait for all the calendars to be synced
+      yield calendars.map(calendar => {
+        return this.calendar(account, calendar);
+      });
 
-      function fetchCalendars(err, calendars) {
-        if (err) {
-          self._resolvePending();
-          return self.handleError(err, callback);
-        }
-
-        for (var key in calendars) {
-          pending++;
-          self.calendar(account, calendars[key], next);
-        }
-      }
-
-      // find all calendars
-      calendarStore.remotesByAccount(
-        account._id,
-        fetchCalendars
-      );
-    });
-  },
+      this._resolvePending();
+      callback && callback();
+    } catch (err) {
+      this._resolvePending();
+      this.handleError(err, callback);
+    }
+  }),
 
   /**
    * Private helper for choosing how to dispatch errors.
@@ -163,7 +134,7 @@ Sync.prototype = {
    * controller will be invoked.
    */
   handleError: function(err, callback) {
-    if (callback) {
+    if (typeof callback === 'function') {
       return callback(err);
     }
 

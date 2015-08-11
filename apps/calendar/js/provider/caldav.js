@@ -694,8 +694,8 @@ CaldavProvider.prototype = {
   },
 
   bailWhenOffline: function(callback) {
-    if (!this.offlineMessage && 'mozL10n' in window.navigator) {
-      this.offlineMessage = window.navigator.mozL10n.get('error-offline');
+    if (!this.offlineMessage && 'mozL10n' in navigator) {
+      this.offlineMessage = navigator.mozL10n.get('error-offline');
     }
 
     var ret = this.isOffline() && callback;

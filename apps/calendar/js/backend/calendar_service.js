@@ -54,11 +54,13 @@ function echo() {
 
 method('echo', echo);
 
+method('accounts', accounts.all);
 method('accounts/get', accounts.get);
 method('accounts/create', accounts.persist);
 method('accounts/remove', accounts.remove);
 method('accounts/presets', accounts.availablePresets);
 stream('accounts/observe', accounts.observe);
+method('accounts/calendars', accounts.getCalendars);
 
 method('events/create', events.create);
 method('events/update', events.update);
@@ -74,6 +76,7 @@ stream('settings/observe', settings.observe);
 
 method('calendars/update', calendars.update);
 stream('calendars/observe', calendars.observe);
+method('calendars/sync', calendars.sync);
 
 method('time/update', core.timeModel.update);
 
