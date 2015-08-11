@@ -26,13 +26,13 @@ var daysBetween = Calc.daysBetween;
 var debounce = require('ext/mout').debounce;
 var getDayId = Calc.getDayId;
 var isAllDay = Calc.isAllDay;
-var spanOfMonth = Calc.spanOfMonth;
+// var spanOfMonth = Calc.spanOfMonth;
 
 // make sure we only trigger a single emit for multiple consecutive changes
 var DISPATCH_DELAY = 25;
 
 // maximum amount of months to keep in the cache
-var MAX_CACHED_MONTHS = 5;
+// var MAX_CACHED_MONTHS = 5;
 
 // stores busytimes by Id
 // {key:id, value:Busytime}
@@ -57,7 +57,7 @@ var dayQueue = new Set();
 var cachedSpans = [];
 
 // we lock the cache pruning during sync
-var cacheLocked = false;
+// var cacheLocked = false;
 
 // emitter exposed because of unit tests
 var emitter = exports.emitter = new EventEmitter2();
@@ -72,14 +72,14 @@ exports.init = function() {
   busytimeStore.on('persist', (id, busy) => cacheBusytime(busy));
   busytimeStore.on('remove', removeBusytimeById);
 
-  core.syncController.on('syncStart', () => {
-    cacheLocked = true;
-  });
-  core.syncController.on('syncComplete', () => {
-    cacheLocked = false;
-    pruneCache();
-    dispatch();
-  });
+  // core.syncController.on('syncStart', () => {
+    // cacheLocked = true;
+  // });
+  // core.syncController.on('syncComplete', () => {
+    // cacheLocked = false;
+    // pruneCache();
+    // dispatch();
+  // });
 
   var calendarStore = core.storeFactory.get('Calendar');
   calendarStore.on('calendarVisibilityChange', (id, calendar) => {
@@ -91,14 +91,14 @@ exports.init = function() {
     });
   });
 
-  core.timeController.on('monthChange', loadMonth);
+  // core.timeController.on('monthChange', loadMonth);
 
   // make sure loadMonth is called during setup if 'monthChange' was dispatched
   // before we added the listener
-  var month = core.timeController.month;
-  if (month) {
-    loadMonth(month);
-  }
+  // var month = core.timeController.month;
+  // if (month) {
+    // loadMonth(month);
+  // }
 };
 
 exports.on = function(date, callback) {
@@ -283,97 +283,97 @@ var dispatch = debounce(function() {
   });
 }, DISPATCH_DELAY);
 
-function loadMonth(newMonth) {
-  var span = spanOfMonth(newMonth);
+// function loadMonth(newMonth) {
+  // var span = spanOfMonth(newMonth);
 
-  // ensure we load the minimum amount of busytimes possible
-  var toLoad = span;
-  cachedSpans.every(cached => toLoad = cached.trimOverlap(toLoad));
+  // // ensure we load the minimum amount of busytimes possible
+  // var toLoad = span;
+  // cachedSpans.every(cached => toLoad = cached.trimOverlap(toLoad));
 
-  if (!toLoad) {
-    // already loaded all the busytimes
-    return;
-  }
+  // if (!toLoad) {
+    // // already loaded all the busytimes
+    // return;
+  // }
 
-  // cache the whole month instead of `toLoad` because we purge whole months
-  cachedSpans.push(span);
+  // // cache the whole month instead of `toLoad` because we purge whole months
+  // cachedSpans.push(span);
 
-  var busytimeStore = core.storeFactory.get('Busytime');
-  busytimeStore.loadSpan(toLoad, onBusytimeSpanLoad);
-}
+  // var busytimeStore = core.storeFactory.get('Busytime');
+  // busytimeStore.loadSpan(toLoad, onBusytimeSpanLoad);
+// }
 
-function onBusytimeSpanLoad(err, busytimes) {
-  if (err) {
-    console.error('Error loading Busytimes from TimeSpan:', err.toString());
-    return;
-  }
+// function onBusytimeSpanLoad(err, busytimes) {
+  // if (err) {
+    // console.error('Error loading Busytimes from TimeSpan:', err.toString());
+    // return;
+  // }
 
-  // remove duplicates and avoid loading events that are already cached
-  var eventIds = Array.from(new Set(
-    busytimes.map(b => b.eventId).filter(id => !events.has(id))
-  ));
+  // // remove duplicates and avoid loading events that are already cached
+  // var eventIds = Array.from(new Set(
+    // busytimes.map(b => b.eventId).filter(id => !events.has(id))
+  // ));
 
-  var eventStore = core.storeFactory.get('Event');
-  eventStore.findByIds(eventIds).then(events => {
-    // it's very important to cache the events before the busytimes otherwise
-    // the records won't contain the event data
-    Object.keys(events).forEach(key => cacheEvent(events[key]));
-    busytimes.forEach(cacheBusytime);
+  // var eventStore = core.storeFactory.get('Event');
+  // eventStore.findByIds(eventIds).then(events => {
+    // // it's very important to cache the events before the busytimes otherwise
+    // // the records won't contain the event data
+    // Object.keys(events).forEach(key => cacheEvent(events[key]));
+    // busytimes.forEach(cacheBusytime);
 
-    pruneCache();
-  });
-}
+    // pruneCache();
+  // });
+// }
 
-function pruneCache() {
-  if (cacheLocked) {
-    return;
-  }
+// function pruneCache() {
+  // if (cacheLocked) {
+    // return;
+  // }
 
-  trimCachedSpans();
-  cache.forEach(removeDayFromCacheIfOutsideSpans);
-  eventsToBusytimes.forEach(removeEventIfNoBusytimes);
-}
+  // trimCachedSpans();
+  // cache.forEach(removeDayFromCacheIfOutsideSpans);
+  // eventsToBusytimes.forEach(removeEventIfNoBusytimes);
+// }
 
-function trimCachedSpans() {
-  while (cachedSpans.length > MAX_CACHED_MONTHS) {
-    // since most changes are sequential, remove the timespans that are further
-    // away from the current month
-    var baseDate = core.timeController.month;
-    var maxDiff = 0;
-    var maxDiffIndex = 0;
-    cachedSpans.forEach((span, i) => {
-      var diff = Math.abs(span.start - baseDate);
-      if (diff > maxDiff) {
-        maxDiff = diff;
-        maxDiffIndex = i;
-      }
-    });
-    cachedSpans.splice(maxDiffIndex, 1);
-  }
-}
+// function trimCachedSpans() {
+  // while (cachedSpans.length > MAX_CACHED_MONTHS) {
+    // // since most changes are sequential, remove the timespans that are
+    // // further away from the current month
+    // var baseDate = core.timeController.month;
+    // var maxDiff = 0;
+    // var maxDiffIndex = 0;
+    // cachedSpans.forEach((span, i) => {
+      // var diff = Math.abs(span.start - baseDate);
+      // if (diff > maxDiff) {
+        // maxDiff = diff;
+        // maxDiffIndex = i;
+      // }
+    // });
+    // cachedSpans.splice(maxDiffIndex, 1);
+  // }
+// }
 
-function removeDayFromCacheIfOutsideSpans(day, id) {
-  if (outsideSpans(day.date)) {
-    day.basic.forEach(removeRecordIfOutsideSpans);
-    day.allday.forEach(removeRecordIfOutsideSpans);
-    cache.delete(id);
-  }
-}
+// function removeDayFromCacheIfOutsideSpans(day, id) {
+  // if (outsideSpans(day.date)) {
+    // day.basic.forEach(removeRecordIfOutsideSpans);
+    // day.allday.forEach(removeRecordIfOutsideSpans);
+    // cache.delete(id);
+  // }
+// }
 
 function outsideSpans(date) {
   return !cachedSpans.some(timespan => timespan.contains(date));
 }
 
-function removeRecordIfOutsideSpans(record) {
-  removeBusytimeIfOutsideSpans(record.busytime);
-}
+// function removeRecordIfOutsideSpans(record) {
+  // removeBusytimeIfOutsideSpans(record.busytime);
+// }
 
-function removeBusytimeIfOutsideSpans(busytime) {
-  var {_id, startDate, endDate} = busytime;
-  if (outsideSpans(startDate) && outsideSpans(endDate)) {
-    removeBusytimeById(_id);
-  }
-}
+// function removeBusytimeIfOutsideSpans(busytime) {
+  // var {_id, startDate, endDate} = busytime;
+  // if (outsideSpans(startDate) && outsideSpans(endDate)) {
+    // removeBusytimeById(_id);
+  // }
+// }
 
 function removeEventIfNoBusytimes(ids, eventId) {
   if (!ids.length) {

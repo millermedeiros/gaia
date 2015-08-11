@@ -3,6 +3,7 @@
 require.config({
   paths: {
     common: '../common',
+    models: '../common/models',
     ext: '../ext'
   }
 });

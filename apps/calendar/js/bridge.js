@@ -1,10 +1,11 @@
 define(function(require, exports) {
 'use strict';
 
+var AccountModel = require('models/account');
+var CalendarModel = require('models/calendar');
 var EventEmitter2 = require('ext/eventemitter2');
+var EventModel = require('models/event');
 var client;
-var co = require('ext/co');
-var core = require('core');
 var dayObserver = require('day_observer');
 var nextTick = require('common/next_tick');
 var thread;
@@ -36,18 +37,11 @@ function exec(type, args) {
  * views based on the busytimeId
  */
 exports.fetchRecord = function(busytimeId) {
-  return co(function *() {
-    var record = yield dayObserver.findAssociated(busytimeId);
-    var eventStore = core.storeFactory.get('Event');
-    var owners = yield eventStore.ownersOf(record.event);
-    var provider = core.providerFactory.get(owners.account.providerType);
-    var capabilities = yield provider.eventCapabilities(record.event);
-
-    record.calendar = owners.calendar;
-    record.account = owners.account;
-    record.capabilities = capabilities;
-
-    return record;
+  return method('records/get', busytimeId).then(r => {
+    r.event = new EventModel(r.event);
+    r.calendar = new CalendarModel(r.calendar);
+    r.account = new AccountModel(r.account);
+    return r;
   });
 };
 

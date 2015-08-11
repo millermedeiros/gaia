@@ -9,7 +9,8 @@ require.config({
   paths: {
     shared: '/shared/js',
     dom: 'curl/plugin/dom',
-    css: 'curl/plugin/css'
+    css: 'curl/plugin/css',
+    models: 'common/models'
   },
   shim: {
     'ext/caldav': { exports: 'Caldav' },
