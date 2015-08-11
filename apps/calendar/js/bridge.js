@@ -3,11 +3,8 @@ define(function(require, exports) {
 
 var AccountModel = require('models/account');
 var CalendarModel = require('models/calendar');
-var EventEmitter2 = require('ext/eventemitter2');
 var EventModel = require('models/event');
 var client;
-var dayObserver = require('day_observer');
-var nextTick = require('common/next_tick');
 var thread;
 var threads = require('ext/threads');
 
@@ -26,11 +23,22 @@ function exec(type, args) {
       type: 'worker'
     });
 
+    thread.process.onerror = function(err) {
+      console.error('Bridge Worker Error:', err);
+    };
+
     client = threads.client('calendar', { thread: thread });
   }
 
   return client[type].apply(client, args);
 }
+
+/**
+ * notify the backend about timeController updates
+ */
+exports.updateTime = function(data) {
+  return method('time/update', data);
+};
 
 /**
  * Fetch all the data needed to display the busytime information on the event
@@ -104,24 +112,13 @@ exports.observeAccounts = function() {
   return stream('accounts/observe');
 };
 
-exports.observeDay = function(date) {
-  var stream = new FakeClientStream();
-  var emit = stream.write.bind(stream);
-
-  stream.cancel = function() {
-    dayObserver.off(date, emit);
-    stream._cancel();
-  };
-
-  // FIXME: nextTick only really needed because dayObserver dispatches the
-  // first callback synchronously, easier to solve it here than to change
-  // dayObserver; we can remove this nextTick call after moving to threads.js
-  // (since it will always be async)
-  nextTick(() => dayObserver.on(date, emit));
-
-  return stream;
+exports.initDay = function() {
+  return method('days/init');
 };
 
+exports.observeDay = function(date) {
+  return stream('days/observe', date);
+};
 
 /**
  * Returns a list of available presets filtered by
@@ -130,34 +127,6 @@ exports.observeDay = function(date) {
  */
 exports.availablePresets = function(presetList) {
   return method('accounts/presets', presetList);
-};
-
-/**
- * FakeClientStream is used as a temporary solution while we move all the db
- * calls into the worker. In the end all the methods inside this file will be
- * transfered into the "backend/calendar_service.js" and we will simply call
- * the `threads.client('calendar')` API
- */
-function FakeClientStream() {
-  this._emitter = new EventEmitter2();
-  this._enabled = true;
-}
-
-FakeClientStream.prototype.write = function(data) {
-  this._enabled && this._emitter.emit('data', data);
-};
-
-FakeClientStream.prototype.listen = function(callback) {
-  this._enabled && this._emitter.on('data', callback);
-};
-
-FakeClientStream.prototype.unlisten = function(callback) {
-  this._enabled && this._emitter.off('data', callback);
-};
-
-FakeClientStream.prototype._cancel = function() {
-  this._emitter.removeAllListeners();
-  this._enabled = false;
 };
 
 });

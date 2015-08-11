@@ -7,8 +7,8 @@ var asyncRequire = require('common/async_require');
 var co = require('ext/co');
 var core = require('core');
 var dateL10n = require('date_l10n');
-var dayObserver = require('day_observer');
 var debug = require('common/debug')('app');
+var debounce = require('ext/mout').debounce;
 var messageHandler = require('message_handler');
 var nextTick = require('common/next_tick');
 var performance = require('performance');
@@ -98,7 +98,18 @@ function setupControllers() {
   // transparently. Defaults to off for tests.
   var alarms = core.storeFactory.get('Alarm');
   alarms.autoQueue = true;
+
+  // need to keep the selected day/month in sync between frontend and backend
+  core.timeController.on('scaleChange', notifyTimeControllerChange);
+  core.timeController.on('selectedDayChange', notifyTimeControllerChange);
+  core.timeController.on('dayChange', notifyTimeControllerChange);
+  core.timeController.on('monthChange', notifyTimeControllerChange);
+  core.timeController.on('yearChange', notifyTimeControllerChange);
 }
+
+var notifyTimeControllerChange = debounce(function() {
+  core.bridge.updateTime(core.timeController.toJSON());
+}, 50);
 
 function setupUI() {
   return co(function *() {
@@ -144,19 +155,6 @@ function renderView(viewName) {
   });
 }
 
-function startDayObserver() {
-  // it should only start listening for month change after we have the
-  // calendars data, otherwise we might display events from calendars
-  // that are not visible. this also makes sure we load the calendars
-  // as soon as possible
-  return co(function *() {
-    var storeFactory = core.storeFactory;
-    var calendars = storeFactory.get('Calendar');
-    yield calendars.all();
-    dayObserver.init();
-  });
-}
-
 function startUI() {
   // we init the UI after the db.load to increase perceived performance
   // (will feel like busytimes are displayed faster)
@@ -185,7 +183,7 @@ function init() {
     setupPendingManager();
     yield core.db.load();
     setupControllers();
-    yield [startDayObserver(), startUI()];
+    yield [core.bridge.initDay(), startUI()];
     messageHandler.start();
     configureAudioChannelManager();
   });

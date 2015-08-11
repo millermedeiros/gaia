@@ -67,6 +67,8 @@ Manager.prototype = {
       return;
     }
 
+    console.error('Worker Error:', err);
+
     if (worker.instance) {
       worker.instance.terminate();
       worker.instance = null;

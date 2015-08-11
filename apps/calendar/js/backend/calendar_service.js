@@ -17,6 +17,7 @@ var loadDb;
 core.db = new Db('b2g-calendar');
 core.providerFactory = require('provider/factory');
 core.storeFactory = require('store/factory');
+core.timeModel = require('time_model');
 
 function start() {
   if (loadDb != null) {
@@ -64,6 +65,7 @@ method('events/update', events.update);
 method('events/remove', events.remove);
 
 method('records/get', busytimes.fetchRecord);
+method('days/init', busytimes.init);
 stream('days/observe', busytimes.observeDay);
 
 method('settings/get', settings.get);
@@ -72,6 +74,8 @@ stream('settings/observe', settings.observe);
 
 method('calendars/update', calendars.update);
 stream('calendars/observe', calendars.observe);
+
+method('time/update', core.timeModel.update);
 
 exports.start = start;
 

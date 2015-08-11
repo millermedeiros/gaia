@@ -10,5 +10,6 @@ define(function(require, exports, module) {
 exports.db = null;
 exports.providerFactory = null;
 exports.storeFactory = null;
+exports.timeModel = null;
 
 });

@@ -33,4 +33,8 @@ exports.observeDay = function(stream, date) {
   dayObserver.on(date, emit);
 };
 
+exports.init = function() {
+  return dayObserver.init();
+};
+
 });
