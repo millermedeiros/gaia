@@ -1,15 +1,9 @@
 define(function(require, exports) {
 'use strict';
 
-var Db = require('db');
-var ErrorController = require('controllers/error');
 var PendingManager = require('pending_manager');
 var RecurringEventsController = require('controllers/recurring_events');
-var ServiceController = require('controllers/service');
-var SyncController = require('controllers/sync');
-var TimeController = require('controllers/time');
 var asyncRequire = require('common/async_require');
-var bridge = require('bridge');
 var co = require('ext/co');
 var core = require('core');
 var dateL10n = require('date_l10n');
@@ -17,36 +11,15 @@ var dayObserver = require('day_observer');
 var debug = require('common/debug')('app');
 var messageHandler = require('message_handler');
 var nextTick = require('common/next_tick');
-var notificationsController = require('controllers/notifications');
 var performance = require('performance');
-var periodicSyncController = require('controllers/periodic_sync');
-var providerFactory = require('provider/factory');
 var router = require('router');
-var storeFactory = require('store/factory');
+var setupCore = require('core_setup');
 var timeObserver = require('time_observer');
-var viewFactory = require('views/factory');
 
 var loadLazyStyles = null;
 var l10nReady = new Promise(resolve => navigator.mozL10n.once(() => resolve()));
 var pendingManager = new PendingManager();
 var startingURL = window.location.href;
-
-function setupCore(dbName) {
-  if (core.db) {
-    return;
-  }
-  core.bridge = bridge;
-  core.db = new Db(dbName || 'b2g-calendar');
-  core.errorController = new ErrorController();
-  core.notificationsController = notificationsController;
-  core.periodicSyncController = periodicSyncController;
-  core.providerFactory = providerFactory;
-  core.serviceController = new ServiceController();
-  core.storeFactory = storeFactory;
-  core.syncController = new SyncController();
-  core.timeController = new TimeController();
-  core.viewFactory = viewFactory;
-}
 
 function setupPendingManager() {
   pendingManager.onpending = () => {
@@ -113,8 +86,8 @@ function setupControllers() {
   // start the workers
   core.serviceController.start(false);
 
-  notificationsController.observe();
-  periodicSyncController.observe();
+  core.notificationsController.observe();
+  core.periodicSyncController.observe();
 
   var recurringEventsController = new RecurringEventsController();
   pendingManager.register(recurringEventsController);
@@ -147,7 +120,7 @@ function setupUI() {
       nextTick(() => window.location.href = startingURL);
     });
 
-    nextTick(() => viewFactory.get('Errors'));
+    nextTick(() => core.viewFactory.get('Errors'));
 
     yield [
       renderView('TimeHeader'),
@@ -164,7 +137,7 @@ function setupUI() {
 
 function renderView(viewName) {
   return new Promise(accept => {
-    viewFactory.get(viewName, view => {
+    core.viewFactory.get(viewName, view => {
       view.render();
       accept();
     });

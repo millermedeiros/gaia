@@ -1,6 +1,11 @@
 (function() {
 'use strict';
 
+window.onerror = function errHandler(msg, url, line) {
+  console.error('window.onerror Error:', msg, '@', url, ':', line);
+  return false;
+};
+
 window.require = window.require || window.curl;
 
 require.config({
