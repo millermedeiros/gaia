@@ -9,6 +9,7 @@ var calendars = require('services/calendars');
 var co = require('ext/co');
 var core = require('core');
 var events = require('services/events');
+var notifications = require('services/notifications');
 var settings = require('services/settings');
 var threads = require('ext/threads');
 
@@ -82,6 +83,8 @@ stream('calendars/observe', calendars.observe);
 method('calendars/sync', calendars.sync);
 
 method('time/update', core.timeModel.update);
+
+method('notifications/get', notifications.get);
 
 exports.start = start;
 

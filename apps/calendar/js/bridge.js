@@ -149,4 +149,11 @@ exports.availablePresets = function(presetList) {
   return method('accounts/presets', presetList);
 };
 
+exports.getNotificationDetails = function(alarm) {
+  return method('notifications/get', {
+    eventId: alarm.eventId,
+    busytimeId: alarm.busytimeId
+  });
+};
+
 });
