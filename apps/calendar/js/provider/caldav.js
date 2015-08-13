@@ -36,7 +36,6 @@ function CaldavProvider() {
   Abstract.apply(this, arguments);
 
   var storeFactory = core.storeFactory;
-  this.service = core.serviceController;
   this.accounts = storeFactory.get('Account');
   this.busytimes = storeFactory.get('Busytime');
   this.events = storeFactory.get('Event');

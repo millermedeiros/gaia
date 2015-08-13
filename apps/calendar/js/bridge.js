@@ -24,7 +24,11 @@ function exec(type, args) {
     });
 
     thread.process.onerror = function(err) {
-      console.error('Bridge Worker Error:', err);
+      console.error(
+        'Bridge Worker Error:', err.message, '@', err.file, ':',
+        err.line, err.stack
+      );
+      return false;
     };
 
     client = threads.client('calendar', { thread: thread });

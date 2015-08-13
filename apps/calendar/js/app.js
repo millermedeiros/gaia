@@ -83,9 +83,6 @@ function setupRouter() {
  * Can only be initialized after db.load()
  */
 function setupControllers() {
-  // start the workers
-  core.serviceController.start(false);
-
   core.notificationsController.observe();
   core.periodicSyncController.observe();
 

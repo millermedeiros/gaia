@@ -24,6 +24,7 @@ function createPresetsFile(options) {
 exports.execute = function(options) {
   var config = utils.getFile(options.APP_DIR, 'build', 'calendar.build.js');
   var configWorker = utils.getFile(options.APP_DIR, 'build', 'worker.build.js');
+  var configCaldav = utils.getFile(options.APP_DIR, 'build', 'caldav.build.js');
   var requirejs = r.get(options.GAIA_DIR);
 
   createPresetsFile(options);
@@ -36,6 +37,9 @@ exports.execute = function(options) {
     }),
     new Promise((accept, reject) => {
       requirejs.optimize([configWorker.path], accept, reject);
+    }),
+    new Promise((accept, reject) => {
+      requirejs.optimize([configCaldav.path], accept, reject);
     })
   ]);
 

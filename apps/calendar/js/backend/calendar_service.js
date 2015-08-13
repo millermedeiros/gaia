@@ -1,6 +1,7 @@
 define(function(require, exports) {
 'use strict';
 
+var CaldavManager = require('caldav/manager');
 var Db = require('db');
 var accounts = require('services/accounts');
 var busytimes = require('services/busytimes');
@@ -18,6 +19,7 @@ core.db = new Db('b2g-calendar');
 core.providerFactory = require('provider/factory');
 core.storeFactory = require('store/factory');
 core.timeModel = require('time_model');
+core.caldavManager = new CaldavManager();
 
 function start() {
   if (loadDb != null) {
@@ -25,6 +27,7 @@ function start() {
   }
 
   loadDb = core.db.load();
+  core.caldavManager.start(false);
   return loadDb;
 }
 

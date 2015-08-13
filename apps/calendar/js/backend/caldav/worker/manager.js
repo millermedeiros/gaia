@@ -67,7 +67,10 @@ Manager.prototype = {
       return;
     }
 
-    console.error('Worker Error:', err);
+    console.error(
+      'Caldav Worker Error:', err.message, '@', err.file, ':',
+      err.line, err.stack
+    );
 
     if (worker.instance) {
       worker.instance.terminate();

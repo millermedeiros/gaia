@@ -6,7 +6,6 @@ define(function(require, exports, module) {
 
 var Db = require('db');
 var ErrorController = require('controllers/error');
-var ServiceController = require('controllers/service');
 var SyncController = require('controllers/sync');
 var TimeController = require('controllers/time');
 var bridge = require('bridge');
@@ -27,7 +26,6 @@ module.exports = function(dbName) {
   core.notificationsController = notificationsController;
   core.periodicSyncController = periodicSyncController;
   core.providerFactory = providerFactory;
-  core.serviceController = new ServiceController();
   core.storeFactory = storeFactory;
   core.syncController = new SyncController();
   core.timeController = new TimeController();

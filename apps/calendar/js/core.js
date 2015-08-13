@@ -12,7 +12,6 @@ exports.errorController = null;
 exports.notificationsController = null;
 exports.periodicSyncController = null;
 exports.providerFactory = null;
-exports.serviceController = null;
 exports.storeFactory = null;
 exports.syncController = null;
 exports.timeController = null;
