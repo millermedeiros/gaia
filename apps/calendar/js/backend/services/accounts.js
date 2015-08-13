@@ -41,13 +41,26 @@ exports.sync = function(account) {
   return accountStore.sync(account);
 };
 
-exports.all = function() {
+exports.all = co.wrap(function *() {
   var accountStore = core.storeFactory.get('Account');
-  return accountStore.all().then(list => {
-    // convert into array since it's easier to manipulate
-    return object.map(list);
+  var accounts = yield accountStore.all();
+  // convert into array since it's easier to manipulate
+  // also include the provider data since that is very important through the
+  // whole app, avoids extra queries and references to the providers on the
+  // frontend
+  var data = object.map(accounts, (id, account) => {
+    var provider = core.providerFactory.get(account.providerType);
+    return {
+      account: account,
+      // serialize only the data that we need
+      provider: {
+        hasAccountSettings: provider.hasAccountSettings,
+        canSync: provider.canSync
+      }
+    };
   });
-};
+  return data;
+});
 
 exports.get = function(id) {
   var accountStore = core.storeFactory.get('Account');
@@ -72,19 +85,8 @@ exports.observe = function(stream) {
 
   var getAllAndWrite = co.wrap(function *() {
     try {
-      var accounts = yield accountStore.all();
-      var data = object.map(accounts, (id, account) => {
-        var provider = core.providerFactory.get(account.providerType);
-        return {
-          account: account,
-          // serialize only the data that we need
-          provider: {
-            hasAccountSettings: provider.hasAccountSettings,
-            canSync: provider.canSync
-          }
-        };
-      });
-      stream.write(data);
+      var accounts = yield exports.all();
+      stream.write(accounts);
     } catch(err) {
       console.error(`Error fetching accounts: ${err.message}`);
     }

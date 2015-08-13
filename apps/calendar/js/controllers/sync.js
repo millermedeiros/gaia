@@ -68,6 +68,7 @@ Sync.prototype = {
     }
 
     var accounts = yield core.bridge.getAllAccounts();
+    accounts = accounts.map(a => a.account);
     accounts.forEach(this.account, this);
 
     // If we have nothing to sync
