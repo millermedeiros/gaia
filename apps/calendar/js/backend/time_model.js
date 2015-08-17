@@ -9,6 +9,8 @@ var mixIn = require('common/object').mixIn;
 
 exports = module.exports = new Responder();
 
+exports.month = null;
+
 exports.update = function(data) {
   var { month } = exports;
   if (!month || !isSameDate(month, data.month)) {

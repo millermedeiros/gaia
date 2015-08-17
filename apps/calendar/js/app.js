@@ -100,8 +100,6 @@ function setupControllers() {
   core.timeController.on('scaleChange', notifyTimeControllerChange);
   core.timeController.on('selectedDayChange', notifyTimeControllerChange);
   core.timeController.on('dayChange', notifyTimeControllerChange);
-  core.timeController.on('monthChange', notifyTimeControllerChange);
-  core.timeController.on('yearChange', notifyTimeControllerChange);
 }
 
 var notifyTimeControllerChange = debounce(function() {
