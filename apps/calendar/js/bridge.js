@@ -37,6 +37,14 @@ function exec(type, args) {
   return client[type].apply(client, args);
 }
 
+exports.on = function(type, fn) {
+  return exec('on', [type, fn]);
+};
+
+exports.off = function(type, fn) {
+  return exec('off', [type, fn]);
+};
+
 /**
  * notify the backend about timeController updates
  */

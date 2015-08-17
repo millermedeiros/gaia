@@ -11,10 +11,12 @@ var notification = require('notification');
 exports.observe = function() {
   debug('Will start notifications controller...');
   messageHandler.responder.on('alarm', exports.onAlarm);
+  core.bridge.on('alarm', exports.onAlarm);
 };
 
 exports.unobserve = function() {
   messageHandler.responder.off('alarm', exports.onAlarm);
+  core.bridge.off('alarm', exports.onAlarm);
 };
 
 exports.onAlarm = function(alarm) {

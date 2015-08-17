@@ -21,6 +21,7 @@ core.providerFactory = require('provider/factory');
 core.storeFactory = require('store/factory');
 core.timeModel = require('time_model');
 core.caldavManager = new CaldavManager();
+core.service = service;
 
 function start() {
   if (loadDb != null) {

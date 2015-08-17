@@ -259,7 +259,7 @@ function dispatchAlarms(past, future) {
   });
 
   object.forEach(eventToAlarm, (event, alarm) => {
-    core.notificationsController.onAlarm(alarm);
+    core.service.broadcast('alarm', alarm);
   });
 
   // If the alarm should be triggered in the future, then we can create an
