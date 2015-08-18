@@ -93,7 +93,7 @@ method('time/update', core.timeModel.update);
 
 method('notifications/get', notifications.get);
 
-method('sync/all', () => core.syncService.all());
+method('sync/all', core.syncService.all);
 
 exports.start = start;
 
