@@ -6,15 +6,15 @@ define(function(require, exports, module) {
 
 var Db = require('db');
 var ErrorController = require('controllers/error');
-var SyncController = require('controllers/sync');
 var TimeController = require('controllers/time');
 var bridge = require('bridge');
 var core = require('core');
-var providerFactory = require('provider/factory');
-var storeFactory = require('store/factory');
-var viewFactory = require('views/factory');
 var notificationsController = require('controllers/notifications');
 var periodicSyncController = require('controllers/periodic_sync');
+var providerFactory = require('provider/factory');
+var storeFactory = require('store/factory');
+var syncListener = require('sync_listener');
+var viewFactory = require('views/factory');
 
 module.exports = function(dbName) {
   if (core.db) {
@@ -27,7 +27,7 @@ module.exports = function(dbName) {
   core.periodicSyncController = periodicSyncController;
   core.providerFactory = providerFactory;
   core.storeFactory = storeFactory;
-  core.syncController = new SyncController();
+  core.syncListener = syncListener;
   core.timeController = new TimeController();
   core.viewFactory = viewFactory;
 };

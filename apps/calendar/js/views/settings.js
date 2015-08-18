@@ -142,8 +142,8 @@ Settings.prototype = {
     });
 
     this.syncButton.addEventListener('click', this._onSyncClick.bind(this));
-    core.syncController.on('syncStart', this._syncStartStatus.bind(this));
-    core.syncController.on('syncComplete',
+    core.syncListener.on('syncStart', this._syncStartStatus.bind(this));
+    core.syncListener.on('syncComplete',
       this._syncCompleteStatus.bind(this));
 
     this.calendars.addEventListener(
@@ -190,7 +190,7 @@ Settings.prototype = {
   _onSyncClick: function() {
     // trigger the sync the syncStart/complete events
     // will hide/show the button.
-    core.syncController.all();
+    core.bridge.syncAll();
   },
 
   // Ajust size of drawer scroll area to fit size of calendars, within

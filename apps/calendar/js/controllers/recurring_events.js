@@ -59,7 +59,7 @@ RecurringEvents.prototype = {
       this
     );
 
-    core.syncController.removeEventListener(
+    core.syncListener.removeEventListener(
       'syncComplete',
       this
     );
@@ -79,7 +79,7 @@ RecurringEvents.prototype = {
 
     // we must re-expand after sync so events at least
     // expand to the current position....
-    core.syncController.on('syncComplete', this);
+    core.syncListener.on('syncComplete', this);
   },
 
   handleEvent: function(event) {

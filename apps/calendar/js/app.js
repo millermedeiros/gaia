@@ -14,6 +14,7 @@ var nextTick = require('common/next_tick');
 var performance = require('performance');
 var router = require('router');
 var setupCore = require('core_setup');
+var syncListener = require('sync_listener');
 var timeObserver = require('time_observer');
 
 var loadLazyStyles = null;
@@ -43,7 +44,8 @@ function setupPendingManager() {
     }
   };
 
-  pendingManager.register(core.syncController);
+  syncListener.observe();
+  pendingManager.register(syncListener);
 }
 
 function setupRouter() {

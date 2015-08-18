@@ -79,10 +79,6 @@ exports.updateCalendar = function(calendar) {
   return method('calendars/update', calendar);
 };
 
-exports.syncCalendar = function(account, calendar) {
-  return method('calendars/sync', account, calendar);
-};
-
 exports.createEvent = function(event) {
   return method('events/create', event);
 };
@@ -107,16 +103,8 @@ exports.observeSetting = function(id) {
   return stream('settings/observe', id);
 };
 
-exports.syncAccount = function(account) {
-  return method('accounts/sync', account);
-};
-
 exports.getAllAccounts = function() {
   return method('accounts');
-};
-
-exports.calendarsByAccountId = function(id) {
-  return method('accounts/calendars', id);
 };
 
 exports.getAccount = function(id) {
@@ -162,6 +150,10 @@ exports.getNotificationDetails = function(alarm) {
     eventId: alarm.eventId,
     busytimeId: alarm.busytimeId
   });
+};
+
+exports.syncAll = function() {
+  return method('sync/all');
 };
 
 });

@@ -2,6 +2,8 @@ define(function(require, exports, module) {
 'use strict';
 
 var Responder = require('common/responder');
+var accountsService = require('./accounts');
+var calendarsService = require('./calendars');
 var co = require('ext/co');
 var core = require('core');
 var isOffline = require('common/is_offline');
@@ -19,13 +21,9 @@ function Sync() {
 
   Responder.call(this);
 }
-module.exports = Sync;
 
 Sync.prototype = {
   __proto__: Responder.prototype,
-
-  startEvent: 'syncStart',
-  completeEvent: 'syncComplete',
 
   _incrementPending: function() {
     if (!this.pending) {
@@ -62,12 +60,12 @@ Sync.prototype = {
     }
 
     if (isOffline()) {
-      this.emit('offline');
+      this.emit('syncOffline');
       this.emit('syncComplete');
       return;
     }
 
-    var accounts = yield core.bridge.getAllAccounts();
+    var accounts = yield accountsService.all();
     accounts = accounts.map(a => a.account);
     accounts.forEach(this.account, this);
 
@@ -87,7 +85,7 @@ Sync.prototype = {
   calendar: co.wrap(function *(account, calendar, callback) {
     this._incrementPending();
     try {
-      yield core.bridge.syncCalendar(account, calendar);
+      yield calendarsService.sync(account, calendar);
       this._resolvePending();
       callback && callback();
     } catch(err) {
@@ -113,9 +111,9 @@ Sync.prototype = {
 
     try {
       // need to sync the account first in case the calendar list changed
-      yield core.bridge.syncAccount(account);
+      yield accountsService.sync(account);
 
-      var calendars = yield core.bridge.calendarsByAccountId(account._id);
+      var calendars = yield accountsService.getCalendars(account._id);
       // wait for all the calendars to be synced
       yield calendars.map(calendar => {
         return this.calendar(account, calendar);
@@ -142,5 +140,7 @@ Sync.prototype = {
     core.errorController.dispatch(err);
   }
 };
+
+exports = module.exports = new Sync();
 
 });

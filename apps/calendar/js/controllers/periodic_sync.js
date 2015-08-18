@@ -133,7 +133,7 @@ function sync() {
       var cpuLock = navigator.requestWakeLock('cpu');
       var wifiLock = navigator.requestWakeLock('wifi');
       debug('Will start periodic sync...');
-      core.syncController.all(() => {
+      core.bridge.syncAll(() => {
         debug('Sync complete! Will release cpu and wifi wake locks...');
         cpuLock.unlock();
         wifiLock.unlock();

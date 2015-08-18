@@ -80,15 +80,14 @@ exports.init = co.wrap(function *() {
   busytimeStore.on('persist', (id, busy) => cacheBusytime(busy));
   busytimeStore.on('remove', removeBusytimeById);
 
-  // FIXME: syncController still need to be updated to work inside the worker!
-  // core.syncController.on('syncStart', () => {
-    // cacheLocked = true;
-  // });
-  // core.syncController.on('syncComplete', () => {
-    // cacheLocked = false;
-    // pruneCache();
-    // dispatch();
-  // });
+  core.syncController.on('syncStart', () => {
+    cacheLocked = true;
+  });
+  core.syncController.on('syncComplete', () => {
+    cacheLocked = false;
+    pruneCache();
+    dispatch();
+  });
 
   calendarStore.on('calendarVisibilityChange', (id, calendar) => {
     var type = calendar.localDisplayed ? 'add' : 'remove';

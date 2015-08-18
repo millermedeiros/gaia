@@ -22,11 +22,19 @@ core.storeFactory = require('store/factory');
 core.timeModel = require('time_model');
 core.caldavManager = new CaldavManager();
 core.service = service;
+core.syncController = require('services/sync');
 
 function start() {
   if (loadDb != null) {
     return loadDb;
   }
+
+  // notify frontend about sync events
+  [
+    'syncStart',
+    'syncComplete',
+    'syncOffline'
+  ].forEach(t => core.syncController.on(t, () => service.broadcast(t)));
 
   loadDb = core.db.load();
   core.caldavManager.start(false);
@@ -65,7 +73,6 @@ method('accounts/create', accounts.persist);
 method('accounts/remove', accounts.remove);
 method('accounts/presets', accounts.availablePresets);
 stream('accounts/observe', accounts.observe);
-method('accounts/calendars', accounts.getCalendars);
 
 method('events/create', events.create);
 method('events/update', events.update);
@@ -81,11 +88,12 @@ stream('settings/observe', settings.observe);
 
 method('calendars/update', calendars.update);
 stream('calendars/observe', calendars.observe);
-method('calendars/sync', calendars.sync);
 
 method('time/update', core.timeModel.update);
 
 method('notifications/get', notifications.get);
+
+method('sync/all', () => core.syncController.all());
 
 exports.start = start;
 

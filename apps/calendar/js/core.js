@@ -13,7 +13,7 @@ exports.notificationsController = null;
 exports.periodicSyncController = null;
 exports.providerFactory = null;
 exports.storeFactory = null;
-exports.syncController = null;
+exports.syncListener = null;
 exports.timeController = null;
 exports.viewFactory = null;
 
