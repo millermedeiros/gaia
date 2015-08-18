@@ -22,7 +22,7 @@ core.storeFactory = require('store/factory');
 core.timeModel = require('time_model');
 core.caldavManager = new CaldavManager();
 core.service = service;
-core.syncController = require('services/sync');
+core.syncService = require('services/sync');
 
 function start() {
   if (loadDb != null) {
@@ -34,7 +34,7 @@ function start() {
     'syncStart',
     'syncComplete',
     'syncOffline'
-  ].forEach(t => core.syncController.on(t, () => service.broadcast(t)));
+  ].forEach(t => core.syncService.on(t, () => service.broadcast(t)));
 
   loadDb = core.db.load();
   core.caldavManager.start(false);
@@ -93,7 +93,7 @@ method('time/update', core.timeModel.update);
 
 method('notifications/get', notifications.get);
 
-method('sync/all', () => core.syncController.all());
+method('sync/all', () => core.syncService.all());
 
 exports.start = start;
 

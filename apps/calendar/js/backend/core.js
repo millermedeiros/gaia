@@ -11,7 +11,7 @@ exports.caldavManager = null;
 exports.db = null;
 exports.providerFactory = null;
 exports.storeFactory = null;
-exports.syncController = null;
+exports.syncService = null;
 exports.timeModel = null;
 
 });

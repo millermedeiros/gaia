@@ -27,7 +27,7 @@ exports.persist = co.wrap(function *(model) {
   // we just begin the sync and let the event handlers
   // on the sync controller do the work.
   for (var key in calendars) {
-    core.syncController.calendar(
+    core.syncService.calendar(
       result,
       calendars[key]
     );

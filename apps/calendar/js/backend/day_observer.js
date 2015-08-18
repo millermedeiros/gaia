@@ -80,10 +80,10 @@ exports.init = co.wrap(function *() {
   busytimeStore.on('persist', (id, busy) => cacheBusytime(busy));
   busytimeStore.on('remove', removeBusytimeById);
 
-  core.syncController.on('syncStart', () => {
+  core.syncService.on('syncStart', () => {
     cacheLocked = true;
   });
-  core.syncController.on('syncComplete', () => {
+  core.syncService.on('syncComplete', () => {
     cacheLocked = false;
     pruneCache();
     dispatch();
