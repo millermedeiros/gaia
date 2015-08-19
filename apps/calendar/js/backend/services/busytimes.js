@@ -23,8 +23,9 @@ exports.fetchRecord = co.wrap(function *(busytimeId) {
   return record;
 });
 
-exports.observeDay = function(stream, date) {
+exports.observeDay = function(stream, dateString) {
   var emit = stream.write.bind(stream);
+  var date = new Date(dateString);
 
   stream.cancel = function() {
     dayObserver.off(date, emit);

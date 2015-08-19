@@ -116,11 +116,10 @@ exports._account = co.wrap(function *(account) {
  * controller will be invoked.
  */
 function handleError(err) {
-  // FIXME: errorController only exists on frontend and it uses `instanceof`
-  // which won't work between threads :/
-  // core.errorController.dispatch(err);
-  console.error(`FIXME: errorController not available "${err.message}"`);
-  // TODO: broadcast sync error event to all clients
+  // we need to reject the promise but we should also emit an event because
+  // there might be errors in multiple accounts and frontend might be
+  // listening/handling all the syncErrors
+  exports.emit('syncError', err);
   return Promise.reject(err);
 }
 

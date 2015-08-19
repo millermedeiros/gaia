@@ -56,9 +56,24 @@ function broadcastEvents(target, events) {
 function method(endpoint, handler) {
   core.service.method(endpoint, () => {
     var args = Array.slice(arguments);
-    return co(function *() {
-      yield start();
+    return start().then(() => {
       return handler.apply(null, args);
+    }).then(data => {
+      // make sure models are converted to plain objects when possible
+      return data && typeof data === 'object' && 'toJSON' in data ?
+        data.toJSON() :
+        data;
+    }).catch(err => {
+      if (err && err.detail && 'account' in err.detail) {
+        // IMPORTANT: do not pass account credentials (in case we log error)
+        err.detail = Object.create(err.detail);
+        var account = err.detail.account;
+        account.password = '******';
+        account.user = account.user.replace(/^[^@]+/, '*');
+      }
+      // weird hack to make sure custom errors are handled properly
+      // (otherwise they would be coerced into plain strings)
+      return Promise.reject(err && JSON.stringify(err));
     });
   });
 }

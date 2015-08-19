@@ -12,7 +12,8 @@ module.exports = new BridgeListener({
   events: [
     'syncStart',
     'syncComplete',
-    'syncOffline'
+    'syncOffline',
+    'syncError'
   ]
 });
 

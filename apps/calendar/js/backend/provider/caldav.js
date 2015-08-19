@@ -2,34 +2,28 @@ define(function(require, exports, module) {
 'use strict';
 
 var Abstract = require('./abstract');
-var Authentication = require('common/error').Authentication;
 var Calc = require('common/calc');
 var CaldavPullEvents = require('./caldav_pull_events');
-var CalendarError = require('common/error');
-var InvalidServer = require('common/error').InvalidServer;
+var calendarError = require('common/error');
 var Local = require('./local');
-var ServerFailure = require('common/error').ServerFailure;
 var core = require('core');
 var isOffline = require('common/is_offline');
 var mutations = require('event_mutations');
 var nextTick = require('common/next_tick');
 
 var CALDAV_ERROR_MAP = {
-  'caldav-authentication': Authentication,
-  'caldav-invalid-entrypoint': InvalidServer,
-  'caldav-server-failure': ServerFailure
+  'caldav-authentication': 'authentication',
+  'caldav-invalid-entrypoint': 'invalid-server',
+  'caldav-server-failure': 'server-failure'
 };
 
 function mapError(error, detail) {
-  console.error('Error with name:', error.name);
-  var calError = CALDAV_ERROR_MAP[error.name];
-  if (!calError) {
-    calError = new CalendarError(error.name, detail);
-  } else {
-    calError = new calError(detail);
+  console.error('Caldav Error with name:', error.name);
+  if (error.name in CALDAV_ERROR_MAP) {
+    error = Object.create(error);
+    error.name = CALDAV_ERROR_MAP[error.name];
   }
-
-  return calError;
+  return calendarError.create({ error: error, detail: detail });
 }
 
 function CaldavProvider() {
@@ -85,8 +79,8 @@ CaldavProvider.prototype = {
     // when we receive a permanent error we should mark the account with an
     // error.
     if (
-      calendarErr instanceof Authentication ||
-      calendarErr instanceof InvalidServer
+      calendarError.isAuthentication(calendarErr) ||
+      calendarError.isInvalidServer(calendarErr)
     ) {
       // there must always be an account
       if (detail.account) {

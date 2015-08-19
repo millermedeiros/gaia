@@ -6,34 +6,34 @@ var core = require('core');
 var nextTick = require('common/next_tick');
 var object = require('common/object');
 
-exports.persist = co.wrap(function *(model) {
+exports.persist = co.wrap(function *(data) {
   var storeFactory = core.storeFactory;
   var accountStore = storeFactory.get('Account');
   var calendarStore = storeFactory.get('Calendar');
 
   // begin by persisting the account
-  var [, result] = yield accountStore.verifyAndPersist(model);
+  var [, model] = yield accountStore.verifyAndPersist(data);
 
   // finally sync the account so when
   // we exit the request the user actually
   // has some calendars. This should not take
   // too long (compared to event sync).
-  yield accountStore.sync(result);
+  yield accountStore.sync(model);
 
   // begin sync of calendars
-  var calendars = yield calendarStore.remotesByAccount(result._id);
+  var calendars = yield calendarStore.remotesByAccount(model._id);
 
   // note we don't wait for any of this to complete
   // we just begin the sync and let the event handlers
   // on the sync controller do the work.
   for (var key in calendars) {
     core.syncService.calendar(
-      result,
+      model,
       calendars[key]
     );
   }
 
-  return result;
+  return model;
 });
 
 exports.sync = function(account) {

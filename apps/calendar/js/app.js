@@ -44,6 +44,7 @@ function setupPendingManager() {
     }
   };
 
+  syncListener.on('syncError', err => core.errorController.dispatch(err));
   syncListener.observe();
   pendingManager.register(syncListener);
 }

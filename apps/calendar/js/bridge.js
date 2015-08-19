@@ -17,24 +17,47 @@ function method(...args) {
 }
 
 function exec(type, args) {
-  if (!client) {
-    thread = threads.create({
-      src: '/js/backend/calendar_worker.js',
-      type: 'worker'
+  setupClient();
+
+  // serialize models/data as plain objects when possible
+  args = args.map(a => {
+    return a && typeof a === 'object' && 'toJSON' in a ? a.toJSON() : a;
+  });
+
+  var maybePromise = client[type].apply(client, args);
+
+  // "on/off" don't return promises, "method" does
+  if (maybePromise && maybePromise.catch) {
+    return maybePromise.catch(err => {
+      // weird hack to make sure custom errors are propagated correctly
+      // (otherwise they would be coerced into plain strings)
+      return Promise.reject(err && JSON.parse(err));
     });
-
-    thread.process.onerror = function(err) {
-      console.error(
-        'Bridge Worker Error:', err.message, '@', err.file, ':',
-        err.line, err.stack
-      );
-      return false;
-    };
-
-    client = threads.client('calendar', { thread: thread });
   }
 
-  return client[type].apply(client, args);
+  // "stream" returns a ClientStream
+  return maybePromise;
+}
+
+function setupClient() {
+  if (client) {
+    return;
+  }
+
+  thread = threads.create({
+    src: '/js/backend/calendar_worker.js',
+    type: 'worker'
+  });
+
+  thread.process.onerror = function(err) {
+    console.error(
+      'Bridge Worker Error:', err.message, '@', err.file, ':',
+      err.line, err.stack
+    );
+    return false;
+  };
+
+  client = threads.client('calendar', { thread: thread });
 }
 
 exports.on = function(type, fn) {
