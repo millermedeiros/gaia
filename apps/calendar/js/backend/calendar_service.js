@@ -3,6 +3,7 @@ define(function(require, exports) {
 
 var CaldavManager = require('caldav/manager');
 var Db = require('db');
+var RecurringEvents = require('recurring_events');
 var accounts = require('services/accounts');
 var busytimes = require('services/busytimes');
 var calendars = require('services/calendars');
@@ -13,8 +14,9 @@ var notifications = require('services/notifications');
 var settings = require('services/settings');
 var threads = require('ext/threads');
 
-var service = threads.service('calendar');
 var loadDb;
+var recurringEvents;
+var service = threads.service('calendar');
 
 core.db = new Db('b2g-calendar');
 core.providerFactory = require('provider/factory');
@@ -29,16 +31,29 @@ function start() {
     return loadDb;
   }
 
-  // notify frontend about sync events
-  [
+  broadcastEvents(core.syncService, [
     'syncStart',
     'syncComplete',
     'syncOffline'
-  ].forEach(t => core.syncService.on(t, () => service.broadcast(t)));
+  ]);
+
+  recurringEvents = new RecurringEvents();
+  broadcastEvents(recurringEvents, [
+    'expandStart',
+    'expandComplete'
+  ]);
+  recurringEvents.observe();
 
   loadDb = core.db.load();
   core.caldavManager.start(false);
   return loadDb;
+}
+
+// notify frontend about events
+function broadcastEvents(target, events) {
+  events.forEach(type => target.on(type, data => {
+    service.broadcast(type, data);
+  }));
 }
 
 function method(endpoint, handler) {

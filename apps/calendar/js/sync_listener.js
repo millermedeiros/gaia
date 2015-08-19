@@ -3,20 +3,17 @@
 define(function(require, exports, module) {
 'use strict';
 
-var core = require('core');
-var Responder = require('common/responder');
+var BridgeListener = require('bridge_listener');
 
-exports = module.exports = new Responder();
-
-exports.startEvent = 'syncStart';
-exports.completeEvent = 'syncComplete';
-
-exports.observe = function() {
-  [
+module.exports = new BridgeListener({
+  pending: false,
+  startEvent: 'syncStart',
+  completeEvent: 'syncComplete',
+  events: [
     'syncStart',
     'syncComplete',
     'syncOffline'
-  ].forEach(type => core.bridge.on(type, () => exports.emit(type)));
-};
+  ]
+});
 
 });

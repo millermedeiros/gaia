@@ -2,16 +2,16 @@ define(function(require, exports) {
 'use strict';
 
 var PendingManager = require('pending_manager');
-var RecurringEventsController = require('controllers/recurring_events');
 var asyncRequire = require('common/async_require');
 var co = require('ext/co');
 var core = require('core');
 var dateL10n = require('date_l10n');
-var debug = require('common/debug')('app');
 var debounce = require('ext/mout').debounce;
+var debug = require('common/debug')('app');
 var messageHandler = require('message_handler');
 var nextTick = require('common/next_tick');
 var performance = require('performance');
+var recurringEventsListener = require('recurring_events_listener');
 var router = require('router');
 var setupCore = require('core_setup');
 var syncListener = require('sync_listener');
@@ -88,9 +88,8 @@ function setupControllers() {
   core.notificationsController.observe();
   core.periodicSyncController.observe();
 
-  var recurringEventsController = new RecurringEventsController();
-  pendingManager.register(recurringEventsController);
-  recurringEventsController.observe();
+  pendingManager.register(recurringEventsListener);
+  recurringEventsListener.observe();
 
   // turn on the auto queue this means that when
   // alarms are added to the database we manage them
