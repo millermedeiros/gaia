@@ -1,8 +1,9 @@
 define(function(require, exports) {
 'use strict';
 
-var CaldavManager = require('caldav/manager');
-var Db = require('db');
+// initialize core dependencies
+require('core_setup')();
+
 var RecurringEvents = require('recurring_events');
 var accounts = require('services/accounts');
 var busytimes = require('services/busytimes');
@@ -12,19 +13,9 @@ var core = require('core');
 var events = require('services/events');
 var notifications = require('services/notifications');
 var settings = require('services/settings');
-var threads = require('ext/threads');
 
 var loadDb;
 var recurringEvents;
-var service = threads.service('calendar');
-
-core.db = new Db('b2g-calendar');
-core.providerFactory = require('provider/factory');
-core.storeFactory = require('store/factory');
-core.timeModel = require('time_model');
-core.caldavManager = new CaldavManager();
-core.service = service;
-core.syncService = require('services/sync');
 
 function start() {
   if (loadDb != null) {
@@ -52,12 +43,12 @@ function start() {
 // notify frontend about events
 function broadcastEvents(target, events) {
   events.forEach(type => target.on(type, data => {
-    service.broadcast(type, data);
+    core.service.broadcast(type, data);
   }));
 }
 
 function method(endpoint, handler) {
-  service.method(endpoint, () => {
+  core.service.method(endpoint, () => {
     var args = Array.slice(arguments);
     return co(function *() {
       yield start();
@@ -67,7 +58,7 @@ function method(endpoint, handler) {
 }
 
 function stream(endpoint, handler) {
-  service.stream(endpoint, () => {
+  core.service.stream(endpoint, () => {
     var args = Array.slice(arguments);
     return co(function *() {
       yield start();
