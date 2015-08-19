@@ -40,8 +40,8 @@ Manager.prototype = {
       var err = data[1];
       var builtErr;
 
-      if (window[err.constructorName]) {
-        builtErr = Object.create(window[err.constructorName].prototype);
+      if (self[err.constructorName]) {
+        builtErr = Object.create(self[err.constructorName].prototype);
       } else {
         builtErr = Object.create(Error.prototype);
       }
