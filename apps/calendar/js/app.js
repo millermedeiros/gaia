@@ -91,12 +91,6 @@ function setupControllers() {
   pendingManager.register(recurringEventsListener);
   recurringEventsListener.observe();
 
-  // turn on the auto queue this means that when
-  // alarms are added to the database we manage them
-  // transparently. Defaults to off for tests.
-  var alarms = core.storeFactory.get('Alarm');
-  alarms.autoQueue = true;
-
   // need to keep the selected day/month in sync between frontend and backend
   core.timeController.on('scaleChange', notifyTimeControllerChange);
   core.timeController.on('selectedDayChange', notifyTimeControllerChange);
@@ -177,7 +171,6 @@ function init() {
     debug('Will initialize calendar app');
     setupCore();
     setupPendingManager();
-    yield core.db.load();
     setupControllers();
     yield [core.bridge.initDay(), startUI()];
     messageHandler.start();

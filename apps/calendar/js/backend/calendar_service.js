@@ -35,6 +35,12 @@ function start() {
   ]);
   recurringEvents.observe();
 
+  // turn on the auto queue this means that when
+  // alarms are added to the database we manage them
+  // transparently. Defaults to off for tests.
+  var alarms = core.storeFactory.get('Alarm');
+  alarms.autoQueue = true;
+
   loadDb = core.db.load();
   core.caldavManager.start(false);
   return loadDb;
