@@ -5,6 +5,7 @@ define(function(require, exports) {
 // calendar databases)
 // we need to use l10nID's for backwards compatibility
 // (not changing string IDs between releases).
+// the `View#showErrors` method prepends a "error-" to all "l10nID"
 var ERRORS = {
   'authentication': {
     name: 'authentication',
@@ -17,6 +18,12 @@ var ERRORS = {
   'server-failure': {
     name: 'server-failure',
     l10nID: 'internal-server-error'
+  },
+  // offline is not stored in the database but we keep it here since it might be
+  // used in multiple places of the app
+  'offline': {
+    name: 'offline',
+    l10nID: 'offline'
   }
 };
 
@@ -24,7 +31,10 @@ var ERRORS = {
  * These errors are _not_ exceptions and are designed to be passed not thrown
  * in typical |throw new X| fashion.
  */
-exports.create = function(data) {
+exports.create = function(dataOrId) {
+  var data = typeof dataOrId === 'string' ?
+    { error: { name: dataOrId, message: dataOrId } } :
+    dataOrId;
   var { error, detail } = data;
   var result = {};
   var id = error.name;

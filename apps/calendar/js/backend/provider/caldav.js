@@ -7,6 +7,7 @@ var CaldavPullEvents = require('./caldav_pull_events');
 var calendarError = require('common/error');
 var Local = require('./local');
 var core = require('core');
+var errors = require('common/error');
 var isOffline = require('common/is_offline');
 var mutations = require('event_mutations');
 var nextTick = require('common/next_tick');
@@ -178,8 +179,8 @@ CaldavProvider.prototype = {
   },
 
   getAccount: function(account, callback) {
-    if (this.bailWhenOffline(callback)) {
-      return;
+    if (this.isOffline()) {
+      return this.handleOfflineError(callback);
     }
 
     var self = this;
@@ -210,8 +211,8 @@ CaldavProvider.prototype = {
   },
 
   findCalendars: function(account, callback) {
-    if (this.bailWhenOffline(callback)) {
-      return;
+    if (this.isOffline()) {
+      return this.handleOfflineError(callback);
     }
 
     var self = this;
@@ -353,8 +354,8 @@ CaldavProvider.prototype = {
   syncEvents: function(account, calendar, callback) {
     var self = this;
 
-    if (this.bailWhenOffline(callback)) {
-      return;
+    if (this.isOffline()) {
+      return this.handleOfflineError(callback);
     }
 
     if (!calendar._id) {
@@ -506,9 +507,8 @@ CaldavProvider.prototype = {
       busytime = null;
     }
 
-
-    if (this.bailWhenOffline(callback)) {
-      return;
+    if (this.isOffline()) {
+      return this.handleOfflineError(callback);
     }
 
     this.events.ownersOf(event, fetchOwners);
@@ -573,8 +573,8 @@ CaldavProvider.prototype = {
       busytime = null;
     }
 
-    if (this.bailWhenOffline(callback)) {
-      return;
+    if (this.isOffline()) {
+      return this.handleOfflineError(callback);
     }
 
     this.events.ownersOf(event, fetchOwners);
@@ -651,8 +651,8 @@ CaldavProvider.prototype = {
       busytime = null;
     }
 
-    if (this.bailWhenOffline(callback)) {
-      return;
+    if (this.isOffline()) {
+      return this.handleOfflineError(callback);
     }
 
     this.events.ownersOf(event, fetchOwners);
@@ -687,19 +687,12 @@ CaldavProvider.prototype = {
     }
   },
 
-  bailWhenOffline: function(callback) {
-    if (!this.offlineMessage && 'mozL10n' in navigator) {
-      this.offlineMessage = navigator.mozL10n.get('error-offline');
+  handleOfflineError: function(callback) {
+    var err = errors.create('offline');
+    if (typeof callback === 'function') {
+      return callback(err);
     }
-
-    var ret = this.isOffline() && callback;
-    if (ret) {
-      var error = new Error();
-      error.name = 'offline';
-      error.message = this.offlineMessage;
-      callback(error);
-    }
-    return ret;
+    return Promise.reject(err);
   }
 };
 

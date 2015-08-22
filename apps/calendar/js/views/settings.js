@@ -231,7 +231,6 @@ Settings.prototype = {
       this.calendars.insertAdjacentHTML('beforeend', html);
 
       if (calendar.error) {
-        console.error('Views.Settings calendar error:', calendar.error);
         var idx = this.calendars.children.length - 1;
         var el = this.calendars.children[idx];
         el.classList.add('error');
@@ -310,7 +309,9 @@ Settings.prototype = {
     try {
       yield this._loadBaseData();
     } catch(err) {
-      console.error('Error fetching calendars in View.Settings', err);
+      console.error(
+        `Error fetching calendars in View.Settings ${err.toString()}`
+      );
       return;
     }
 
