@@ -64,14 +64,7 @@ function method(endpoint, handler) {
         data.toJSON() :
         data;
     }).catch(err => {
-      if (err && err.detail && 'account' in err.detail) {
-        // IMPORTANT: do not pass account credentials (in case we log error)
-        err.detail = Object.create(err.detail);
-        var account = err.detail.account;
-        account.password = '******';
-        account.user = account.user.replace(/^[^@]+/, '*');
-      }
-      // weird hack to make sure custom errors are handled properly
+      // hack to make sure custom errors are handled properly
       // (otherwise they would be coerced into plain strings)
       return Promise.reject(err && JSON.stringify(err));
     });
