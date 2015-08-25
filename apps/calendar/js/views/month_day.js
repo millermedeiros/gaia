@@ -64,6 +64,7 @@ MonthDay.prototype = {
 
   deactivate: function() {
     this._observer && this._observer.cancel();
+    this._observer = null;
   },
 
   destroy: function() {
